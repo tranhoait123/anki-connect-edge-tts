@@ -69,8 +69,10 @@ class AnkiGenerator:
         text = re.sub(r'[\U0001F300-\U0001F9FF]|[\U0001F600-\U0001F64F]|[\u2600-\u27BF]', '', text)
         # Remove long separators
         text = re.sub(r'[-_=]{3,}', ' ', text)
-        # Collapse whitespace
-        text = re.sub(r'\s+', ' ', text).strip()
+        # Remove URLs (http, https, www)
+        text = re.sub(r'http[s]?://\S+|www\.\S+', '', text)
+        # Remove filenames that might leak (e.g. .jpg, .png) if they aren't in tags
+        text = re.sub(r'\S+\.(jpg|png|gif|jpeg|mp3|mp4)\b', '', text, flags=re.IGNORECASE)
         
         # XML Escape for SSML (Important!)
         text = html.escape(text)
