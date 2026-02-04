@@ -170,7 +170,7 @@ if connected:
     with col_act2:
         st.write("") # Spacer
         st.write("") # Spacer
-        preview_btn = st.button("🔊 Preview Sample (1 Note)", disabled=not connected, use_container_width=True)
+        preview_btn = st.button("🎲 Preview Random Note", disabled=not connected, use_container_width=True)
 
     if preview_btn:
         with st.spinner("Generating preview..."):
@@ -197,7 +197,16 @@ if connected:
                 
                 if preview_file:
                     st.audio(preview_file)
-                    st.success("Playing preview of the first note found.")
+                    
+                    with open(preview_file, "rb") as f:
+                        btn = st.download_button(
+                            label="📥 Download Preview",
+                            data=f,
+                            file_name="preview.mp3",
+                            mime="audio/mpeg"
+                        )
+                    
+                    st.success("Playing preview of a random note.")
                 else:
                     st.warning("No notes found or generation failed.")
 

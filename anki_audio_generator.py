@@ -165,7 +165,9 @@ class AnkiGenerator:
             if log_callback: log_callback(f"Found {len(note_ids)} notes. Fetching details...")
             
             if preview_only:
-                target_notes = note_ids[:1]
+                import random
+                # Pick a random note for preview to verify different cards
+                target_notes = [random.choice(note_ids)]
             else:
                 target_notes = note_ids
 
