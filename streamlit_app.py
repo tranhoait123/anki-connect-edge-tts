@@ -45,22 +45,51 @@ if connected:
         asyncio.set_event_loop(loop)
         voices = loop.run_until_complete(get_voices())
         
-        # Helper to format voice options
-        voice_options = [v['ShortName'] for v in voices]
+        # Helper to format voice options and languages
+        # Voice structure example: {'Name': 'Microsoft Server Speech Text to Speech Voice (vi-VN, NamMinhNeural)', 'ShortName': 'vi-VN-NamMinhNeural', ...}
         
-        # Default indices
-        def get_voice_index(name_part):
-            for idx, v in enumerate(voice_options):
+        languages = set()
+        voices_by_lang = {}
+        
+        for v in voices:
+            # Extract language code (e.g., vi-VN) from ShortName (vi-VN-NamMinhNeural)
+            parts = v['ShortName'].split('-')
+            if len(parts) >= 3:
+                lang_code = f"{parts[0]}-{parts[1]}"
+                if lang_code not in languages:
+                    languages.add(lang_code)
+                    voices_by_lang[lang_code] = []
+                voices_by_lang[lang_code].append(v['ShortName'])
+        
+        sorted_langs = sorted(list(languages))
+        
+        # UI for Language Selection
+        st.subheader("🔊 Voice Settings")
+        
+        col_l1, col_l2 = st.columns(2)
+        
+        # Default to Vietnamese if available
+        default_lang_idx = 0
+        if "vi-VN" in sorted_langs:
+            default_lang_idx = sorted_langs.index("vi-VN")
+            
+        with col_l1:
+            selected_lang = st.selectbox("Language", sorted_langs, index=default_lang_idx)
+            
+        # UI for Voice Selection (filtered by language)
+        current_lang_voices = voices_by_lang.get(selected_lang, [])
+        
+        # Default voice index logic
+        def get_voice_index(voice_list, name_part):
+            for idx, v in enumerate(voice_list):
                 if name_part in v:
                     return idx
             return 0
-
-        st.subheader("🔊 Voice Settings")
-        col_v1, col_v2 = st.columns(2)
-        with col_v1:
-            voice_1 = st.selectbox("Voice 1 (Question/First Field)", voice_options, index=get_voice_index("NamMinhNeural"))
-        with col_v2:
-            voice_2 = st.selectbox("Voice 2 (Answer/Other Fields)", voice_options, index=get_voice_index("HoaiMyNeural"))
+            
+        with col_l2:
+            voice_1 = st.selectbox("Select Voice", current_lang_voices, index=get_voice_index(current_lang_voices, "NamMinhNeural"))
+            # For single voice mode, voice_2 is just voice_1
+            voice_2 = voice_1
             
         st.subheader("⏩ Audio Settings")
         speed = st.slider("Reading Speed", -50, 50, 0, format="%d%%")
