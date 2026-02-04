@@ -26,12 +26,12 @@ class AnkiGenerator:
     def request(self, action, **params):
         return {'action': action, 'params': params, 'version': 6}
 
-    async def generate_and_upload_audio(self, note_id, text, voice, audio_field, log_callback=print):
+    async def generate_and_upload_audio(self, note_id, text, voice, audio_field, log_callback=print, is_ssml=False):
         if not text:
             if log_callback: log_callback(f"Skipping note {note_id}: Source field is empty.")
             return
 
-        # Ensure text is stripped and BOM removed so edge-tts detects SSML
+        # Ensure text is clean
         text = text.strip().lstrip('\ufeff')
         
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
@@ -40,7 +40,13 @@ class AnkiGenerator:
 
         try:
             if log_callback: log_callback(f"Generating audio for note {note_id}...")
+            
+            # If explicit SSML flag is set, or if it looks like SSML, treat as SSML
+            # edge_tts.Communicate handles SSML detection automatically, so we just pass the text.
+            # The is_ssml flag here primarily indicates that the text is already formatted SSML
+            # and doesn't need further wrapping/escaping by this function.
             communicate = edge_tts.Communicate(text, voice)
+                
             await communicate.save(output_file)
 
             with open(output_file, "rb") as file:
@@ -109,11 +115,7 @@ class AnkiGenerator:
         
         return text
 
-    async def generate_preview(self, text, voice, rate="+0%"):
-        # For preview, we typically don't apply abbreviations here unless passed?
-        # Ideally preview should use the cleaning logic.
-        # But this method only takes text. 
-        # We assume 'text' passed here is already cleaned/SSML'd by the caller.
+    async def generate_preview(self, text, voice, rate="+0%", is_ssml=False):
         text = text.strip().lstrip('\ufeff')
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
         filename = f"preview_{text_hash}.mp3"
@@ -125,7 +127,9 @@ class AnkiGenerator:
         except:
             lang_code = "en-US"
 
-        if not text.startswith("<speak"):
+        if is_ssml or text.startswith("<speak"):
+            ssml_text = text
+        else:
              ssml_text = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang_code}">
 <voice name="{voice}">
 <prosody rate="{rate}">
@@ -133,8 +137,6 @@ class AnkiGenerator:
 </prosody> 
 </voice>
 </speak>"""
-        else:
-            ssml_text = text
 
         communicate = edge_tts.Communicate(ssml_text, voice)
         await communicate.save(output_file)
@@ -236,9 +238,11 @@ class AnkiGenerator:
                     
                     if preview_only:
                         if log_callback: log_callback(f"Generating preview for note {note['noteId']}...")
-                        return await self.generate_preview(final_ssml, voice_1, rate)
+                        # Pass IS_SSML=True
+                        return await self.generate_preview(final_ssml, voice_1, rate, is_ssml=True)
                     else:
-                        await self.generate_and_upload_audio(note['noteId'], final_ssml, voice_1, audio_field, log_callback)
+                        # Pass IS_SSML=True
+                        await self.generate_and_upload_audio(note['noteId'], final_ssml, voice_1, audio_field, log_callback, is_ssml=True)
                 else:
                      if log_callback: log_callback(f"Note {note['noteId']}: Text is empty after cleanup.")
                 
