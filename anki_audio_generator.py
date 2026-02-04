@@ -142,7 +142,7 @@ class AnkiGenerator:
         await communicate.save(output_file)
         return output_file
 
-    async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", overwrite=False, deck=None, abbreviations=None, log_callback=print, progress_callback=None, preview_only=False):
+    async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", overwrite=False, deck=None, abbreviations=None, log_callback=print, progress_callback=None, preview_only=False, simple_mode=False):
         try:
             if isinstance(source_fields, str):
                 source_fields = [f.strip() for f in source_fields.split(',')]
@@ -215,6 +215,7 @@ class AnkiGenerator:
                     log_callback(f"Processing ({i+1}/{total_notes}): {snippet}")
 
                 full_ssml_parts = []
+                plain_text_parts = []
                 
                 for idx, s_field in enumerate(source_fields):
                     if s_field in fields:
@@ -223,28 +224,48 @@ class AnkiGenerator:
                         cleaned = self.clean_text_for_tts(raw_text, abbreviations)
                         
                         if cleaned:
-                            current_voice = voice_1 if idx == 0 else voice_2
-                            # Use double quotes for standard XML
-                            part_ssml = f'<voice name="{current_voice}"><prosody rate="{rate}">{cleaned}</prosody></voice>'
-                            full_ssml_parts.append(part_ssml)
+                            if simple_mode:
+                                plain_text_parts.append(cleaned)
+                            else:
+                                current_voice = voice_1 if idx == 0 else voice_2
+                                # Use double quotes for standard XML
+                                part_ssml = f'<voice name="{current_voice}"><prosody rate="{rate}">{cleaned}</prosody></voice>'
+                                full_ssml_parts.append(part_ssml)
                             
                     else:
                         if log_callback: log_callback(f"Warning: Field '{s_field}' not found in note {note['noteId']}")
 
-                if full_ssml_parts:
-                    # Join with break using standard double quotes
-                    inner_content = ' <break time="1000ms" /> '.join(full_ssml_parts)
-                    final_ssml = f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang_code}">{inner_content}</speak>'
-                    
-                    if preview_only:
-                        if log_callback: log_callback(f"Generating preview for note {note['noteId']}...")
-                        # Pass IS_SSML=True
-                        return await self.generate_preview(final_ssml, voice_1, rate, is_ssml=True)
+                if simple_mode:
+                    # Simple Mode: Join text with Period + Space. No SSML.
+                    final_text = ". ".join(plain_text_parts)
+                    if final_text:
+                        if preview_only:
+                             if log_callback: log_callback(f"Generating simple preview...")
+                             return await self.generate_preview(final_text, voice_1, rate, is_ssml=False)
+                        else:
+                             await self.generate_and_upload_audio(note['noteId'], final_text, voice_1, audio_field, log_callback, is_ssml=False)
                     else:
-                        # Pass IS_SSML=True
-                        await self.generate_and_upload_audio(note['noteId'], final_ssml, voice_1, audio_field, log_callback, is_ssml=True)
+                        if log_callback: log_callback(f"Note {note['noteId']}: Text is empty.")
+
                 else:
-                     if log_callback: log_callback(f"Note {note['noteId']}: Text is empty after cleanup.")
+                    # Advanced Mode: SSML
+                    if full_ssml_parts:
+                        # Join with break using standard double quotes
+                        inner_content = ' <break time="1000ms" /> '.join(full_ssml_parts)
+                        final_ssml = f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang_code}">{inner_content}</speak>'
+                        
+                        # LOG THE SSML FOR DEBUGGING
+                        # if log_callback: log_callback(f"DEBUG SSML: {final_ssml[:50]}...")
+
+                        if preview_only:
+                            if log_callback: log_callback(f"Generating preview for note {note['noteId']}...")
+                            # Pass IS_SSML=True
+                            return await self.generate_preview(final_ssml, voice_1, rate, is_ssml=True)
+                        else:
+                            # Pass IS_SSML=True
+                            await self.generate_and_upload_audio(note['noteId'], final_ssml, voice_1, audio_field, log_callback, is_ssml=True)
+                    else:
+                         if log_callback: log_callback(f"Note {note['noteId']}: Text is empty after cleanup.")
                 
                 if progress_callback: progress_callback((i + 1) / total_notes)
 

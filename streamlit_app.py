@@ -166,11 +166,16 @@ if connected:
     with col_act1:
         force_overwrite = st.checkbox("Force overwrite existing audio", value=defaults.get("overwrite", False), help="If checked, audio will be regenerated even if the target field is not empty.")
         start_btn = st.button("Start Batch Generation", type="primary", disabled=not connected, use_container_width=True)
+        # The start_btn is replaced by the new "Start Generation" button below
+        # start_btn = st.button("Start Batch Generation", type="primary", disabled=not connected, use_container_width=True)
         
     with col_act2:
         st.write("") # Spacer
         st.write("") # Spacer
         preview_btn = st.button("🎲 Preview Random Note", disabled=not connected, use_container_width=True)
+
+    # Simple Mode Checkbox
+    simple_mode = st.checkbox("⚠️ Chế độ đơn giản (Simple Mode)", help="Chọn cái này nếu bị lỗi máy đọc mã lệnh (SSML). Chế độ này sẽ tắt giọng địa phương và ngắt nghỉ nâng cao, chỉ đọc văn bản thuần.")
 
     if preview_btn:
         with st.spinner("Generating preview..."):
@@ -188,7 +193,8 @@ if connected:
                         rate=rate_str,
                         abbreviations=abbreviations,
                         log_callback=None, # No UI logs for preview
-                        preview_only=True
+                        preview_only=True,
+                        simple_mode=simple_mode
                     )
                 
                 loop = asyncio.new_event_loop()
@@ -213,63 +219,65 @@ if connected:
              except Exception as e:
                 st.error(f"Error: {e}")
 
-    if start_btn:
-        # SAVE SETTINGS
-        new_settings = {
-            "anki_url": anki_url,
-            "deck": selected_deck,
-            "tag": note_tag,
-            "source_fields": source_fields,
-            "audio_field": audio_field,
-            "language": selected_lang,
-            "voice": voice_1,
-            "speed": speed,
-            "abbreviations": abbr_text,
-            "overwrite": force_overwrite
-        }
-        save_settings(new_settings)
-        
-        progress_bar = st.progress(0, text="Starting...")
-        log_area = st.empty()
-        
-        logs = []
-        def log_callback(message):
-            logs.append(message)
-            # update log area with last few lines
-            log_area.code("\n".join(logs[-10:]), language="text")
+    # Generate Button
+    if st.button("🚀 Start Generation", type="primary", disabled=not connected, use_container_width=True):
+        if not source_fields:
+            st.error("Please enter at least one source field.")
+        else:
+            # SAVE SETTINGS
+            new_settings = {
+                "anki_url": anki_url,
+                "deck": selected_deck,
+                "tag": note_tag,
+                "source_fields": source_fields,
+                "audio_field": audio_field,
+                "language": selected_lang,
+                "voice": voice_1,
+                "speed": speed,
+                "abbreviations": abbr_text,
+                "overwrite": force_overwrite
+            }
+            save_settings(new_settings)
 
-        def progress_callback(value):
-            progress_bar.progress(value, text=f"Processing... {int(value*100)}%")
+            log_container = st.empty()
+            progress_bar = st.progress(0, text="Starting...")
+            
+            def update_log(msg):
+                log_container.code("\n".join(logs[-10:]), language="text") # Re-using the original log display logic
+            
+            logs = [] # Initialize logs for the new logging mechanism
+            def log_callback(message): # Re-using the original log_callback
+                logs.append(message)
+                update_log(message)
 
-        try:
-            # Re-instantiate generator to be safe inside button click
-            gen = AnkiGenerator(anki_url)
-            
-            async def run_process():
-                await gen.process_notes(
-                    tag=note_tag,
-                    deck=actual_deck,
-                    source_fields=source_fields,
-                    audio_field=audio_field,
-                    voice_1=voice_1,
-                    voice_2=voice_2,
-                    rate=rate_str,
-                    overwrite=force_overwrite,
-                    abbreviations=abbreviations,
-                    log_callback=log_callback,
-                    progress_callback=progress_callback
-                )
-            
-            # Run the process
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(run_process())
-            
-            st.success("Generation Complete!")
-            progress_bar.progress(1.0, text="Done!")
-            
-        except Exception as e:
-            st.error(f"Error during execution: {e}")
+            try:
+                gen = AnkiGenerator(anki_url)
+                
+                async def run_gen():
+                    await gen.process_notes(
+                        tag=note_tag,
+                        deck=actual_deck,
+                        source_fields=source_fields,
+                        audio_field=audio_field,
+                        voice_1=voice_1,
+                        voice_2=voice_2,
+                        rate=rate_str,
+                        overwrite=force_overwrite,
+                        abbreviations=abbreviations,
+                        log_callback=log_callback,
+                        progress_callback=progress_bar.progress,
+                        simple_mode=simple_mode
+                    )
+
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(run_gen())
+                
+                st.success("Generation Complete!")
+                progress_bar.progress(1.0, text="Done!") # Ensure progress bar completes
+                
+            except Exception as e:
+                st.error(f"Error during execution: {e}")
 
 else:
     st.warning("Please verify your AnkiConnect configuration in the sidebar to proceed.")
