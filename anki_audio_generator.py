@@ -57,7 +57,7 @@ class AnkiGenerator:
             if os.path.exists(output_file):
                 os.remove(output_file)
 
-    def clean_text_for_tts(self, text):
+    def clean_text_for_tts(self, text, abbreviations=None):
         import re
         import html
         
@@ -78,22 +78,32 @@ class AnkiGenerator:
         # Handles {{c1::Answer::Hint}} as well, taking the Answer part.
         text = re.sub(r'\{\{c\d+::(.*?)(?:::[^}]*)?\}\}', r'\1', text)
         
+        # Abbreviation Expansion
+        if abbreviations:
+            # Sort by length descending to replace longer phrases first (though simple dict iter is usually fine for 1-word codes)
+            for short, full in abbreviations.items():
+                # Word boundary check to avoid replacing inside words (e.g., BN in BNA)
+                # Escape the short term just in case
+                pattern = r'\b' + re.escape(short) + r'\b'
+                text = re.sub(pattern, full, text, flags=re.IGNORECASE)
+
+        # Collapse whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        
         # XML Escape for SSML (Important!)
         text = html.escape(text)
         
         return text
 
-    # Override generate_and_upload_audio to handle SSML if needed, 
-    # but Communicate detects SSML automatically if it starts with <speak> usually.
-    # However, to be safe, we will pass the text as is (which will be SSML).
-
     async def generate_preview(self, text, voice, rate="+0%"):
+        # For preview, we typically don't apply abbreviations here unless passed?
+        # Ideally preview should use the cleaning logic.
+        # But this method only takes text. 
+        # We assume 'text' passed here is already cleaned/SSML'd by the caller.
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
         filename = f"preview_{text_hash}.mp3"
         output_file = f"/tmp/{filename}"
         
-        # Build SSML for preview (single voice usually, or we can reuse the multi-voice logic if we split text)
-        # For simplicity, if simple text, wrap in speed.
         if not text.startswith("<speak"):
              ssml_text = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
 <voice name='{voice}'>
@@ -103,23 +113,42 @@ class AnkiGenerator:
 </voice>
 </speak>"""
         else:
-            ssml_text = text # Already SSML
+            ssml_text = text
 
         communicate = edge_tts.Communicate(ssml_text, voice)
         await communicate.save(output_file)
         return output_file
 
-    async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", overwrite=False, log_callback=print, progress_callback=None, preview_only=False):
+    async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", overwrite=False, deck=None, abbreviations=None, log_callback=print, progress_callback=None, preview_only=False):
         try:
             if isinstance(source_fields, str):
                 source_fields = [f.strip() for f in source_fields.split(',')]
             
-            # If voice_2 is not set, use voice_1
             if not voice_2:
                 voice_2 = voice_1
 
-            if log_callback: log_callback(f"Searching for notes with tag: {tag}...")
-            note_ids = self.invoke("findNotes", query=f"tag:{tag}")
+            # Build query
+            query_parts = []
+            if deck:
+                query_parts.append(f'deck:"{deck}"')
+            
+            if tag:
+                query_parts.append(f'tag:{tag}')
+            
+            # If neither tag nor deck is specified, warn? Or just fetch nothing?
+            # Anki usually requires at least one constraint or it returns everything (dangerous)
+            if not query_parts:
+                full_query = "" # This might fetch ALL notes if not careful.
+            else:
+                full_query = " ".join(query_parts)
+
+            if log_callback: log_callback(f"Searching: {full_query}...")
+            
+            if not full_query:
+                if log_callback: log_callback("Please specify a Deck or a Tag.")
+                return
+
+            note_ids = self.invoke("findNotes", query=full_query)
             
             if not note_ids:
                 if log_callback: log_callback("No notes found.")
@@ -127,7 +156,6 @@ class AnkiGenerator:
 
             if log_callback: log_callback(f"Found {len(note_ids)} notes. Fetching details...")
             
-            # If preview, just take the first one
             if preview_only:
                 target_notes = note_ids[:1]
             else:
@@ -137,7 +165,6 @@ class AnkiGenerator:
             total_notes = len(notes_info)
 
             for i, note in enumerate(notes_info):
-                # For preview, we don't check if audio exists or skip
                 fields = note['fields']
                 
                 if not preview_only and not overwrite:
@@ -151,13 +178,12 @@ class AnkiGenerator:
                 for idx, s_field in enumerate(source_fields):
                     if s_field in fields:
                         raw_text = fields[s_field]['value']
-                        cleaned = self.clean_text_for_tts(raw_text)
+                        # Pass abbreviations here
+                        cleaned = self.clean_text_for_tts(raw_text, abbreviations)
                         
                         if cleaned:
-                            # Select voice based on field index (0=Voice1, >=1=Voice2)
-                            # Or alternate? Let's stick to: First field = Voice 1, Rest = Voice 2 (Answer)
                             current_voice = voice_1 if idx == 0 else voice_2
-                            
+                            # Don't escape again, clean_text_for_tts already escaped XML
                             part_ssml = f"""
 <voice name='{current_voice}'>
 <prosody rate='{rate}'>
@@ -170,18 +196,12 @@ class AnkiGenerator:
                         if log_callback: log_callback(f"Warning: Field '{s_field}' not found in note {note['noteId']}")
 
                 if full_ssml_parts:
-                    # Join with break
                     inner_content = " <break time='1000ms' /> ".join(full_ssml_parts)
-                    
                     final_ssml = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
 {inner_content}
 </speak>"""
                     
                     if preview_only:
-                         # Generate to a temp file and return it
-                         # We need to pick 'a' voice for the Communicate init, but since we use <voice> tags inside, 
-                         # edge-tts usually respects them if the main voice is compatible or ignored.
-                         # Safest is to use voice_1 as the "main" carrier.
                         if log_callback: log_callback(f"Generating preview for note {note['noteId']}...")
                         return await self.generate_preview(final_ssml, voice_1, rate)
                     else:
