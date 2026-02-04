@@ -45,21 +45,67 @@ if connected:
         asyncio.set_event_loop(loop)
         voices = loop.run_until_complete(get_voices())
         
-        # Filter for Vietnamese by default or just show all
         # Helper to format voice options
         voice_options = [v['ShortName'] for v in voices]
-        default_index = 0
-        try:
-             # Try to set a default Vietnamese voice
-             default_index = voice_options.index("vi-VN-NamMinhNeural")
-        except ValueError:
-             pass
-             
-        selected_voice = st.selectbox("Select Voice", voice_options, index=default_index)
+        
+        # Default indices
+        def get_voice_index(name_part):
+            for idx, v in enumerate(voice_options):
+                if name_part in v:
+                    return idx
+            return 0
+
+        st.subheader("🔊 Voice Settings")
+        col_v1, col_v2 = st.columns(2)
+        with col_v1:
+            voice_1 = st.selectbox("Voice 1 (Question/First Field)", voice_options, index=get_voice_index("NamMinhNeural"))
+        with col_v2:
+            voice_2 = st.selectbox("Voice 2 (Answer/Other Fields)", voice_options, index=get_voice_index("HoaiMyNeural"))
+            
+        st.subheader("⏩ Audio Settings")
+        speed = st.slider("Reading Speed", -50, 50, 0, format="%d%%")
+        
+        # Convert speed to string format e.g. "+10%" or "-10%"
+        rate_str = f"{speed:+d}%"
 
     st.divider()
     
-    start_btn = st.button("Start Generation", type="primary", disabled=not connected)
+    col_act1, col_act2 = st.columns([1, 1])
+    
+    with col_act1:
+        start_btn = st.button("Start Batch Generation", type="primary", disabled=not connected, use_container_width=True)
+    with col_act2:
+        preview_btn = st.button("🔊 Preview Sample (1 Note)", disabled=not connected, use_container_width=True)
+
+    if preview_btn:
+        with st.spinner("Generating preview..."):
+             try:
+                gen = AnkiGenerator(anki_url)
+                
+                async def run_preview():
+                    return await gen.process_notes(
+                        tag=note_tag,
+                        source_fields=source_fields,
+                        audio_field=audio_field,
+                        voice_1=voice_1,
+                        voice_2=voice_2,
+                        rate=rate_str,
+                        log_callback=None, # No UI logs for preview
+                        preview_only=True
+                    )
+                
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                preview_file = loop.run_until_complete(run_preview())
+                
+                if preview_file:
+                    st.audio(preview_file)
+                    st.success("Playing preview of the first note found.")
+                else:
+                    st.warning("No notes found or generation failed.")
+
+             except Exception as e:
+                st.error(f"Error: {e}")
 
     if start_btn:
         progress_bar = st.progress(0, text="Starting...")
@@ -83,7 +129,9 @@ if connected:
                     tag=note_tag,
                     source_fields=source_fields,
                     audio_field=audio_field,
-                    voice=selected_voice,
+                    voice_1=voice_1,
+                    voice_2=voice_2,
+                    rate=rate_str,
                     log_callback=log_callback,
                     progress_callback=progress_callback
                 )

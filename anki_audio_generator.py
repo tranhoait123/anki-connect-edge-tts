@@ -81,10 +81,36 @@ class AnkiGenerator:
     # but Communicate detects SSML automatically if it starts with <speak> usually.
     # However, to be safe, we will pass the text as is (which will be SSML).
 
-    async def process_notes(self, tag, source_fields, audio_field, voice, log_callback=print, progress_callback=None):
+    async def generate_preview(self, text, voice, rate="+0%"):
+        text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
+        filename = f"preview_{text_hash}.mp3"
+        output_file = f"/tmp/{filename}"
+        
+        # Build SSML for preview (single voice usually, or we can reuse the multi-voice logic if we split text)
+        # For simplicity, if simple text, wrap in speed.
+        if not text.startswith("<speak"):
+             ssml_text = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
+<voice name='{voice}'>
+<prosody rate='{rate}'>
+{html.escape(text)}
+</prosody> 
+</voice>
+</speak>"""
+        else:
+            ssml_text = text # Already SSML
+
+        communicate = edge_tts.Communicate(ssml_text, voice)
+        await communicate.save(output_file)
+        return output_file
+
+    async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", log_callback=print, progress_callback=None, preview_only=False):
         try:
             if isinstance(source_fields, str):
                 source_fields = [f.strip() for f in source_fields.split(',')]
+            
+            # If voice_2 is not set, use voice_1
+            if not voice_2:
+                voice_2 = voice_1
 
             if log_callback: log_callback(f"Searching for notes with tag: {tag}...")
             note_ids = self.invoke("findNotes", query=f"tag:{tag}")
@@ -94,54 +120,72 @@ class AnkiGenerator:
                 return
 
             if log_callback: log_callback(f"Found {len(note_ids)} notes. Fetching details...")
-            notes_info = self.invoke("notesInfo", notes=note_ids)
+            
+            # If preview, just take the first one
+            if preview_only:
+                target_notes = note_ids[:1]
+            else:
+                target_notes = note_ids
 
+            notes_info = self.invoke("notesInfo", notes=target_notes)
             total_notes = len(notes_info)
+
             for i, note in enumerate(notes_info):
+                # For preview, we don't check if audio exists or skip
                 fields = note['fields']
                 
-                if audio_field in fields and fields[audio_field]['value']:
-                     if log_callback: log_callback(f"Note {note['noteId']} already has audio. Skipping.")
-                     if progress_callback: progress_callback((i + 1) / total_notes)
-                     continue
+                if not preview_only:
+                    if audio_field in fields and fields[audio_field]['value']:
+                         if log_callback: log_callback(f"Note {note['noteId']} already has audio. Skipping.")
+                         if progress_callback: progress_callback((i + 1) / total_notes)
+                         continue
                 
-                full_text_parts = []
-                for s_field in source_fields:
+                full_ssml_parts = []
+                
+                for idx, s_field in enumerate(source_fields):
                     if s_field in fields:
                         raw_text = fields[s_field]['value']
                         cleaned = self.clean_text_for_tts(raw_text)
+                        
                         if cleaned:
-                            full_text_parts.append(cleaned)
+                            # Select voice based on field index (0=Voice1, >=1=Voice2)
+                            # Or alternate? Let's stick to: First field = Voice 1, Rest = Voice 2 (Answer)
+                            current_voice = voice_1 if idx == 0 else voice_2
+                            
+                            part_ssml = f"""
+<voice name='{current_voice}'>
+<prosody rate='{rate}'>
+{cleaned}
+</prosody>
+</voice>"""
+                            full_ssml_parts.append(part_ssml)
+                            
                     else:
                         if log_callback: log_callback(f"Warning: Field '{s_field}' not found in note {note['noteId']}")
 
-                if full_text_parts:
-                    # Construct SSML
-                    # <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>
-                    # <voice name='...'>
-                    # Part 1 <break time='1s' /> Part 2
-                    # </voice> </speak>
+                if full_ssml_parts:
+                    # Join with break
+                    inner_content = " <break time='1000ms' /> ".join(full_ssml_parts)
                     
-                    inner_content = ""
-                    for idx, part in enumerate(full_text_parts):
-                        inner_content += part
-                        if idx < len(full_text_parts) - 1:
-                            # Add break between fields
-                            inner_content += ' <break time="1500ms" /> '
-                    
-                    ssml_text = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
-<voice name='{voice}'>
+                    final_ssml = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
 {inner_content}
-</voice>
 </speak>"""
                     
-                    await self.generate_and_upload_audio(note['noteId'], ssml_text, voice, audio_field, log_callback)
+                    if preview_only:
+                         # Generate to a temp file and return it
+                         # We need to pick 'a' voice for the Communicate init, but since we use <voice> tags inside, 
+                         # edge-tts usually respects them if the main voice is compatible or ignored.
+                         # Safest is to use voice_1 as the "main" carrier.
+                        if log_callback: log_callback(f"Generating preview for note {note['noteId']}...")
+                        return await self.generate_preview(final_ssml, voice_1, rate)
+                    else:
+                        await self.generate_and_upload_audio(note['noteId'], final_ssml, voice_1, audio_field, log_callback)
                 else:
                      if log_callback: log_callback(f"Note {note['noteId']}: Text is empty after cleanup.")
                 
                 if progress_callback: progress_callback((i + 1) / total_notes)
 
-            if log_callback: log_callback("Done!")
+            if log_callback and not preview_only: log_callback("Done!")
 
         except Exception as e:
             if log_callback: log_callback(f"An error occurred: {e}")
