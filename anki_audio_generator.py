@@ -59,19 +59,27 @@ class AnkiGenerator:
 
     def clean_text_for_tts(self, text):
         import re
-        # Remove HTML tags
+        import html
+        
+        # Remove HTML tags (keeping content)
         text = re.sub('<[^<]+?>', '', text)
         # Remove citations like [1], [2]
         text = re.sub(r'\[\d+\]', '', text)
-        # Remove emojis (regex for common emoji ranges)
-        # This is a basic filter, might need pypi regex library for full coverage but keeping it simple for now
-        # ranges: dingbats, emoticons, misc symbols/pictographs, transport/map, supplemental symbols
+        # Remove emojis
         text = re.sub(r'[\U0001F300-\U0001F9FF]|[\U0001F600-\U0001F64F]|[\u2600-\u27BF]', '', text)
-        # Remove long separators (3 or more dashes/underscores/equals)
+        # Remove long separators
         text = re.sub(r'[-_=]{3,}', ' ', text)
-        # Collapse multiple whitespace
+        # Collapse whitespace
         text = re.sub(r'\s+', ' ', text).strip()
+        
+        # XML Escape for SSML (Important!)
+        text = html.escape(text)
+        
         return text
+
+    # Override generate_and_upload_audio to handle SSML if needed, 
+    # but Communicate detects SSML automatically if it starts with <speak> usually.
+    # However, to be safe, we will pass the text as is (which will be SSML).
 
     async def process_notes(self, tag, source_fields, audio_field, voice, log_callback=print, progress_callback=None):
         try:
@@ -92,10 +100,6 @@ class AnkiGenerator:
             for i, note in enumerate(notes_info):
                 fields = note['fields']
                 
-                # Check target field existence first (optional but good for safety)
-                # AnkiConnect usually errors if field doesn't exist during update, but good to check early if possible.
-
-                # Check if Audio field already has content
                 if audio_field in fields and fields[audio_field]['value']:
                      if log_callback: log_callback(f"Note {note['noteId']} already has audio. Skipping.")
                      if progress_callback: progress_callback((i + 1) / total_notes)
@@ -112,10 +116,26 @@ class AnkiGenerator:
                         if log_callback: log_callback(f"Warning: Field '{s_field}' not found in note {note['noteId']}")
 
                 if full_text_parts:
-                    # Join with a pause. For TTS, a period or newlines often create a pause.
-                    # Edge TTS might respect punctuation.
-                    final_text = " ... ".join(full_text_parts) 
-                    await self.generate_and_upload_audio(note['noteId'], final_text, voice, audio_field, log_callback)
+                    # Construct SSML
+                    # <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>
+                    # <voice name='...'>
+                    # Part 1 <break time='1s' /> Part 2
+                    # </voice> </speak>
+                    
+                    inner_content = ""
+                    for idx, part in enumerate(full_text_parts):
+                        inner_content += part
+                        if idx < len(full_text_parts) - 1:
+                            # Add break between fields
+                            inner_content += ' <break time="1500ms" /> '
+                    
+                    ssml_text = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
+<voice name='{voice}'>
+{inner_content}
+</voice>
+</speak>"""
+                    
+                    await self.generate_and_upload_audio(note['noteId'], ssml_text, voice, audio_field, log_callback)
                 else:
                      if log_callback: log_callback(f"Note {note['noteId']}: Text is empty after cleanup.")
                 
