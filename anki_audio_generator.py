@@ -62,8 +62,15 @@ class AnkiGenerator:
         import re
         import html
         
-        # Remove HTML tags (keeping content)
+        # Remove script and style tags WITH their content
+        text = re.sub(r'<(style|script)[^>]*>.*?</\1>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Remove HTML tags (keeping content of other tags like div, span)
         text = re.sub('<[^<]+?>', '', text)
+        
+        # Decode HTML entities (e.g. &nbsp; -> space, &gt; -> >) so we can clean them
+        text = html.unescape(text)
+
         # Remove citations like [1], [2]
         text = re.sub(r'\[\d+\]', '', text)
         # Remove emojis
