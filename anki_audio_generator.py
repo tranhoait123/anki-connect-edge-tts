@@ -57,8 +57,27 @@ class AnkiGenerator:
             if os.path.exists(output_file):
                 os.remove(output_file)
 
-    async def process_notes(self, tag, source_field, audio_field, voice, log_callback=print, progress_callback=None):
+    def clean_text_for_tts(self, text):
+        import re
+        # Remove HTML tags
+        text = re.sub('<[^<]+?>', '', text)
+        # Remove citations like [1], [2]
+        text = re.sub(r'\[\d+\]', '', text)
+        # Remove emojis (regex for common emoji ranges)
+        # This is a basic filter, might need pypi regex library for full coverage but keeping it simple for now
+        # ranges: dingbats, emoticons, misc symbols/pictographs, transport/map, supplemental symbols
+        text = re.sub(r'[\U0001F300-\U0001F9FF]|[\U0001F600-\U0001F64F]|[\u2600-\u27BF]', '', text)
+        # Remove long separators (3 or more dashes/underscores/equals)
+        text = re.sub(r'[-_=]{3,}', ' ', text)
+        # Collapse multiple whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+
+    async def process_notes(self, tag, source_fields, audio_field, voice, log_callback=print, progress_callback=None):
         try:
+            if isinstance(source_fields, str):
+                source_fields = [f.strip() for f in source_fields.split(',')]
+
             if log_callback: log_callback(f"Searching for notes with tag: {tag}...")
             note_ids = self.invoke("findNotes", query=f"tag:{tag}")
             
@@ -72,22 +91,31 @@ class AnkiGenerator:
             total_notes = len(notes_info)
             for i, note in enumerate(notes_info):
                 fields = note['fields']
-                if source_field not in fields:
-                    if log_callback: log_callback(f"Note {note['noteId']} does not have field '{source_field}'. Skipping.")
-                    continue
                 
+                # Check target field existence first (optional but good for safety)
+                # AnkiConnect usually errors if field doesn't exist during update, but good to check early if possible.
+
                 # Check if Audio field already has content
                 if audio_field in fields and fields[audio_field]['value']:
                      if log_callback: log_callback(f"Note {note['noteId']} already has audio. Skipping.")
                      if progress_callback: progress_callback((i + 1) / total_notes)
                      continue
                 
-                source_text = fields[source_field]['value']
-                import re
-                clean_text = re.sub('<[^<]+?>', '', source_text).strip()
-                
-                if clean_text:
-                    await self.generate_and_upload_audio(note['noteId'], clean_text, voice, audio_field, log_callback)
+                full_text_parts = []
+                for s_field in source_fields:
+                    if s_field in fields:
+                        raw_text = fields[s_field]['value']
+                        cleaned = self.clean_text_for_tts(raw_text)
+                        if cleaned:
+                            full_text_parts.append(cleaned)
+                    else:
+                        if log_callback: log_callback(f"Warning: Field '{s_field}' not found in note {note['noteId']}")
+
+                if full_text_parts:
+                    # Join with a pause. For TTS, a period or newlines often create a pause.
+                    # Edge TTS might respect punctuation.
+                    final_text = " ... ".join(full_text_parts) 
+                    await self.generate_and_upload_audio(note['noteId'], final_text, voice, audio_field, log_callback)
                 else:
                      if log_callback: log_callback(f"Note {note['noteId']}: Text is empty after cleanup.")
                 
@@ -104,12 +132,12 @@ async def main():
     # Default configuration for CLI
     ANKI_CONNECT_URL = "http://localhost:8765"
     NOTE_TAG = "vocab_korean" 
-    SOURCE_FIELD = "Front"
-    AUDIO_FIELD = "Audio"
+    SOURCE_FIELDS = ["Front", "Back"] # List of fields
+    AUDIO_FIELD = "TTS"
     VOICE = "vi-VN-NamMinhNeural"  
 
     generator = AnkiGenerator(ANKI_CONNECT_URL)
-    await generator.process_notes(NOTE_TAG, SOURCE_FIELD, AUDIO_FIELD, VOICE)
+    await generator.process_notes(NOTE_TAG, SOURCE_FIELDS, AUDIO_FIELD, VOICE)
 
 if __name__ == "__main__":
     asyncio.run(main())

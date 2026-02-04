@@ -31,9 +31,9 @@ if connected:
     col1, col2 = st.columns(2)
     with col1:
         note_tag = st.text_input("Note Tag", value="vocab_korean", help="The tag of the notes to process")
-        source_field = st.text_input("Source Field (Text)", value="Front", help="Field containing the text to read")
+        source_fields = st.text_input("Source Fields (Text)", value="Front, Back", help="Fields to read, comma-separated (e.g. 'Front, Back')")
     with col2:
-        audio_field = st.text_input("Target Field (Audio)", value="Audio", help="Field to save the audio tag")
+        audio_field = st.text_input("Target Field (Audio)", value="TTS", help="Field to save the audio tag")
         
         # Async function to get voices
         async def get_voices():
@@ -81,7 +81,7 @@ if connected:
             async def run_process():
                 await gen.process_notes(
                     tag=note_tag,
-                    source_field=source_field,
+                    source_fields=source_fields,
                     audio_field=audio_field,
                     voice=selected_voice,
                     log_callback=log_callback,
