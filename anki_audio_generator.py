@@ -31,8 +31,8 @@ class AnkiGenerator:
             if log_callback: log_callback(f"Skipping note {note_id}: Source field is empty.")
             return
 
-        # Ensure text is stripped so edge-tts detects SSML
-        text = text.strip()
+        # Ensure text is stripped and BOM removed so edge-tts detects SSML
+        text = text.strip().lstrip('\ufeff')
         
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
         filename = f"tts_{text_hash}.mp3"
@@ -65,6 +65,9 @@ class AnkiGenerator:
         import re
         import html
         
+        # Remove control characters (e.g. null bytes, etc.) that might break XML
+        text = "".join(ch for ch in text if ch.isprintable())
+
         # Remove script and style tags WITH their content
         text = re.sub(r'<(style|script)[^>]*>.*?</\1>', '', text, flags=re.DOTALL | re.IGNORECASE)
         
@@ -111,13 +114,19 @@ class AnkiGenerator:
         # Ideally preview should use the cleaning logic.
         # But this method only takes text. 
         # We assume 'text' passed here is already cleaned/SSML'd by the caller.
-        text = text.strip()
+        text = text.strip().lstrip('\ufeff')
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
         filename = f"preview_{text_hash}.mp3"
         output_file = f"/tmp/{filename}"
         
+        # Extract lang from voice (e.g. vi-VN-NamMinhNeural -> vi-VN)
+        try:
+            lang_code = "-".join(voice.split("-")[:2])
+        except:
+            lang_code = "en-US"
+
         if not text.startswith("<speak"):
-             ssml_text = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+             ssml_text = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang_code}">
 <voice name="{voice}">
 <prosody rate="{rate}">
 {html.escape(text)}
@@ -177,6 +186,12 @@ class AnkiGenerator:
 
             notes_info = self.invoke("notesInfo", notes=target_notes)
             total_notes = len(notes_info)
+            
+            # Extract lang from voice name for strict SSML
+            try:
+                lang_code = "-".join(voice_1.split("-")[:2])
+            except:
+                lang_code = "en-US"
 
             for i, note in enumerate(notes_info):
                 fields = note['fields']
@@ -207,7 +222,7 @@ class AnkiGenerator:
                         
                         if cleaned:
                             current_voice = voice_1 if idx == 0 else voice_2
-                            # Don't escape again, clean_text_for_tts already escaped XML
+                            # Use double quotes for standard XML
                             part_ssml = f'<voice name="{current_voice}"><prosody rate="{rate}">{cleaned}</prosody></voice>'
                             full_ssml_parts.append(part_ssml)
                             
@@ -215,8 +230,9 @@ class AnkiGenerator:
                         if log_callback: log_callback(f"Warning: Field '{s_field}' not found in note {note['noteId']}")
 
                 if full_ssml_parts:
+                    # Join with break using standard double quotes
                     inner_content = ' <break time="1000ms" /> '.join(full_ssml_parts)
-                    final_ssml = f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">{inner_content}</speak>'
+                    final_ssml = f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang_code}">{inner_content}</speak>'
                     
                     if preview_only:
                         if log_callback: log_callback(f"Generating preview for note {note['noteId']}...")
