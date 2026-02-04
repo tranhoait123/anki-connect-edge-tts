@@ -74,3 +74,57 @@ Other projects that use the `edge-tts` module include:
 * [hass-edge-tts](https://github.com/hasscc/hass-edge-tts/blob/main/custom_components/edge_tts/tts.py)
 * [Podcastfy](https://github.com/souzatharsis/podcastfy/blob/main/podcastfy/tts/providers/edge.py)
 * [tts-samples](https://github.com/yaph/tts-samples/blob/main/bin/create_sound_samples.py) - a collection of [mp3 sound samples](https://github.com/yaph/tts-samples/tree/main/mp3) to facilitate picking a voice for your project.
+
+## Anki Connect TTS Generator (New Feature 🚀)
+
+This project now includes a **Streamlit App** to batch generate audio for your Anki cards using `edge-tts` and `AnkiConnect`.
+
+### ✨ Key Features
+*   **Batch Processing**: Generate audio for hundreds of cards at once by Tag.
+*   **Medical Optimization**:
+    *   **SSML Support**: Adds smart pauses (1.5s) between fields (Question/Answer).
+    *   **Text Cleaning**: Automatically removes Emojis, citations `[1]`, and medical formatting.
+*   **Advanced Audio Control**:
+    *   **Single Voice Mode**: One voice reads everything (Question & Answer) for consistency.
+    *   **Speed Control**: Adjust reading speed from `-50%` to `+50%`.
+    *   **Language Filter**: Easily filter voices by language (e.g., `vi-VN`, `en-US`).
+*   **Preview**: Listen to a sample note before generating for the whole deck.
+
+### 🛠️ Setup
+
+1.  **Install Requirements**:
+    ```bash
+    pip install streamlit edge-tts
+    ```
+2.  **Anki Configuration**:
+    *   Install the [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add-on.
+    *   Update AnkiConnect Config (Tools -> Add-ons -> AnkiConnect -> Config) to allow local connections:
+        ```json
+        {
+            "apiKey": null,
+            "apiLogPath": null,
+            "ignoreOriginList": [],
+            "webBindAddress": "127.0.0.1",
+            "webBindPort": 8765,
+            "webCorsOriginList": ["*"]
+        }
+        ```
+    *   **Restart Anki**.
+
+### 🚀 How to Run
+
+1.  Open your terminal in the project folder.
+2.  Run the app:
+    ```bash
+    streamlit run streamlit_app.py
+    ```
+3.  The app will open in your browser.
+4.  **Settings**:
+    *   **Note Tag**: Enter the tag of the cards you want to add audio to (e.g., `vocab_korean`).
+    *   **Source Fields**: Comma-separated fields to read (e.g., `Front, Back`).
+    *   **Target Field**: Field to save the audio file (e.g., `TTS`).
+    *   **Voice**: Select Language -> Voice.
+    *   **Speed**: Adjust as needed.
+5.  Click **Start Batch Generation**.
+
+---
