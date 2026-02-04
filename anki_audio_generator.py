@@ -74,6 +74,10 @@ class AnkiGenerator:
         # Remove filenames that might leak (e.g. .jpg, .png) if they aren't in tags
         text = re.sub(r'\S+\.(jpg|png|gif|jpeg|mp3|mp4)\b', '', text, flags=re.IGNORECASE)
         
+        # Optimize for Cloze Deletions: {{c1::Answer}} -> Answer
+        # Handles {{c1::Answer::Hint}} as well, taking the Answer part.
+        text = re.sub(r'\{\{c\d+::(.*?)(?:::[^}]*)?\}\}', r'\1', text)
+        
         # XML Escape for SSML (Important!)
         text = html.escape(text)
         
@@ -105,7 +109,7 @@ class AnkiGenerator:
         await communicate.save(output_file)
         return output_file
 
-    async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", log_callback=print, progress_callback=None, preview_only=False):
+    async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", overwrite=False, log_callback=print, progress_callback=None, preview_only=False):
         try:
             if isinstance(source_fields, str):
                 source_fields = [f.strip() for f in source_fields.split(',')]
@@ -136,7 +140,7 @@ class AnkiGenerator:
                 # For preview, we don't check if audio exists or skip
                 fields = note['fields']
                 
-                if not preview_only:
+                if not preview_only and not overwrite:
                     if audio_field in fields and fields[audio_field]['value']:
                          if log_callback: log_callback(f"Note {note['noteId']} already has audio. Skipping.")
                          if progress_callback: progress_callback((i + 1) / total_notes)

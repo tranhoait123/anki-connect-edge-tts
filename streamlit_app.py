@@ -102,8 +102,12 @@ if connected:
     col_act1, col_act2 = st.columns([1, 1])
     
     with col_act1:
+        force_overwrite = st.checkbox("Force overwrite existing audio", value=False, help="If checked, audio will be regenerated even if the target field is not empty.")
         start_btn = st.button("Start Batch Generation", type="primary", disabled=not connected, use_container_width=True)
+        
     with col_act2:
+        st.write("") # Spacer
+        st.write("") # Spacer
         preview_btn = st.button("🔊 Preview Sample (1 Note)", disabled=not connected, use_container_width=True)
 
     if preview_btn:
@@ -161,6 +165,7 @@ if connected:
                     voice_1=voice_1,
                     voice_2=voice_2,
                     rate=rate_str,
+                    overwrite=force_overwrite,
                     log_callback=log_callback,
                     progress_callback=progress_callback
                 )
