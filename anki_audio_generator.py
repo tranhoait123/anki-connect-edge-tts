@@ -31,12 +31,15 @@ class AnkiGenerator:
             if log_callback: log_callback(f"Skipping note {note_id}: Source field is empty.")
             return
 
+        # Ensure text is stripped so edge-tts detects SSML
+        text = text.strip()
+        
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
         filename = f"tts_{text_hash}.mp3"
         output_file = f"/tmp/{filename}"
 
         try:
-            if log_callback: log_callback(f"Generating audio for: '{text}'...")
+            if log_callback: log_callback(f"Generating audio for note {note_id}...")
             communicate = edge_tts.Communicate(text, voice)
             await communicate.save(output_file)
 
@@ -108,14 +111,15 @@ class AnkiGenerator:
         # Ideally preview should use the cleaning logic.
         # But this method only takes text. 
         # We assume 'text' passed here is already cleaned/SSML'd by the caller.
+        text = text.strip()
         text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
         filename = f"preview_{text_hash}.mp3"
         output_file = f"/tmp/{filename}"
         
         if not text.startswith("<speak"):
-             ssml_text = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
-<voice name='{voice}'>
-<prosody rate='{rate}'>
+             ssml_text = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+<voice name="{voice}">
+<prosody rate="{rate}">
 {html.escape(text)}
 </prosody> 
 </voice>
@@ -204,22 +208,15 @@ class AnkiGenerator:
                         if cleaned:
                             current_voice = voice_1 if idx == 0 else voice_2
                             # Don't escape again, clean_text_for_tts already escaped XML
-                            part_ssml = f"""
-<voice name='{current_voice}'>
-<prosody rate='{rate}'>
-{cleaned}
-</prosody>
-</voice>"""
+                            part_ssml = f'<voice name="{current_voice}"><prosody rate="{rate}">{cleaned}</prosody></voice>'
                             full_ssml_parts.append(part_ssml)
                             
                     else:
                         if log_callback: log_callback(f"Warning: Field '{s_field}' not found in note {note['noteId']}")
 
                 if full_ssml_parts:
-                    inner_content = " <break time='1000ms' /> ".join(full_ssml_parts)
-                    final_ssml = f"""<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='vi-VN'>
-{inner_content}
-</speak>"""
+                    inner_content = ' <break time="1000ms" /> '.join(full_ssml_parts)
+                    final_ssml = f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">{inner_content}</speak>'
                     
                     if preview_only:
                         if log_callback: log_callback(f"Generating preview for note {note['noteId']}...")
