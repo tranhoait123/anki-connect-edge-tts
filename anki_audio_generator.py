@@ -173,6 +173,16 @@ class AnkiGenerator:
                          if progress_callback: progress_callback((i + 1) / total_notes)
                          continue
                 
+                # Extract snippet for logging
+                snippet = ""
+                if source_fields and source_fields[0] in fields:
+                    snippet = fields[source_fields[0]]['value']
+                    # Clean snippet for display (remove html)
+                    snippet = re.sub('<[^<]+?>', '', snippet).strip()[:30] + "..."
+                
+                if log_callback and not preview_only: 
+                    log_callback(f"Processing ({i+1}/{total_notes}): {snippet}")
+
                 full_ssml_parts = []
                 
                 for idx, s_field in enumerate(source_fields):
