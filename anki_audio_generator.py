@@ -26,7 +26,7 @@ class AnkiGenerator:
     def request(self, action, **params):
         return {'action': action, 'params': params, 'version': 6}
 
-    async def generate_and_upload_audio(self, note_id, text, voice, audio_field, log_callback=print, is_ssml=False):
+    async def generate_and_upload_audio(self, note_id, text, voice, audio_field, log_callback=print, is_ssml=False, rate="+0%"):
         if not text:
             if log_callback: log_callback(f"Skipping note {note_id}: Source field is empty.")
             return
@@ -42,10 +42,12 @@ class AnkiGenerator:
             if log_callback: log_callback(f"Generating audio for note {note_id}...")
             
             # If explicit SSML flag is set, or if it looks like SSML, treat as SSML
-            # edge_tts.Communicate handles SSML detection automatically, so we just pass the text.
-            # The is_ssml flag here primarily indicates that the text is already formatted SSML
-            # and doesn't need further wrapping/escaping by this function.
-            communicate = edge_tts.Communicate(text, voice)
+            if is_ssml or text.startswith("<speak"):
+                communicate = edge_tts.Communicate(text, voice)
+            else:
+                # Simple mode: Pass text and rate directly to edge-tts
+                # This is safer than manual XML wrapping as it uses the library's internal handling
+                communicate = edge_tts.Communicate(text, voice, rate=rate)
                 
             await communicate.save(output_file)
 
@@ -121,24 +123,13 @@ class AnkiGenerator:
         filename = f"preview_{text_hash}.mp3"
         output_file = f"/tmp/{filename}"
         
-        # Extract lang from voice (e.g. vi-VN-NamMinhNeural -> vi-VN)
-        try:
-            lang_code = "-".join(voice.split("-")[:2])
-        except:
-            lang_code = "en-US"
-
         if is_ssml or text.startswith("<speak"):
-            ssml_text = text
+            communicate = edge_tts.Communicate(text, voice)
         else:
-             ssml_text = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{lang_code}">
-<voice name="{voice}">
-<prosody rate="{rate}">
-{html.escape(text)}
-</prosody> 
-</voice>
-</speak>"""
+            # For plain text, pass rate directly to Communicate
+            # This avoids manual SSML wrapping entirely in Simple Mode
+            communicate = edge_tts.Communicate(text, voice, rate=rate)
 
-        communicate = edge_tts.Communicate(ssml_text, voice)
         await communicate.save(output_file)
         return output_file
 
@@ -243,7 +234,7 @@ class AnkiGenerator:
                              if log_callback: log_callback(f"Generating simple preview...")
                              return await self.generate_preview(final_text, voice_1, rate, is_ssml=False)
                         else:
-                             await self.generate_and_upload_audio(note['noteId'], final_text, voice_1, audio_field, log_callback, is_ssml=False)
+                             await self.generate_and_upload_audio(note['noteId'], final_text, voice_1, audio_field, log_callback, is_ssml=False, rate=rate)
                     else:
                         if log_callback: log_callback(f"Note {note['noteId']}: Text is empty.")
 
