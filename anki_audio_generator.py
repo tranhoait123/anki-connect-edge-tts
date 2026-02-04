@@ -4,6 +4,7 @@ import urllib.request
 import os
 import hashlib
 import edge_tts
+import re
 
 class AnkiGenerator:
     def __init__(self, anki_connect_url):
