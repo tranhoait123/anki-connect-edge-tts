@@ -1,6 +1,6 @@
-# 🎧 Anki Connect Edge TTS - Auto Audio Generator for Anki
+# 🎧 Anki Connect Edge TTS - The Ultimate Batch Audio Solution for Anki
 
-A powerful, simple, and optimized application for batch generating Text-to-Speech (TTS) for Anki cards using Microsoft Edge TTS technology. Specifically designed for Medical students and language learners.
+Welcome to the most powerful, user-friendly, and optimized tool for elevating your Anki experience. This isn't just a simple TTS generator; it's a meticulously designed system to help you "learn faster and remember longer" through the power of high-quality AI speech.
 
 > **Made with ❤️ by PonZ**
 >
@@ -8,121 +8,131 @@ A powerful, simple, and optimized application for batch generating Text-to-Speec
 
 ---
 
-## 🌟 Concept & Inspiration
+## 📖 Project Vision
 
-This project was born from the practical need to master the vast amount of knowledge in Medical school. Listening to audio helps memory retention significantly, but existing tools were often complex or sounded robotic.
+Staring at text-heavy flashcards can be monotonous and often leads to mispronunciation or poor retention, especially with complex Medical terminology or new languages. This project was created to:
 
-**Inspiration:** This project is inspired by and inherits ideas from [msjsc001/Anki-TTS-Edge](https://github.com/msjsc001/Anki-TTS-Edge). I rebuilt it with a modern Streamlit interface, added smart filters specifically for medical terminology, and created a more intuitive deck management system.
+1. **Save Time**: Instead of manually creating audio files, you can batch-process thousands of cards in minutes.
+2. **Enhance Memory**: The dual-coding effect (visual + auditory) stimulates deeper neural encoding.
+3. **Optimize Workflow**: Professionally manage your decks, filling in missing audio without disrupting your existing data.
 
----
-
-## ✨ Key Features
-
-- **🚀 Smart Scanning & Management**:
-  - **Scan Status**: Instantly see which Deck/Tag is missing audio. Generates a report with total cards, cards with audio, and cards without.
-  - **Smart Fill**: Generate audio only for empty cards (saves time, avoids duplicates).
-  - **Clear Audio**: Wipe the data field clean in one click to restart.
-- **🩺 Medical & Language Optimization**:
-  - **Abbreviation Expansion**: Automatically decodes abbreviations (e.g., `PT` -> `Patient`, `HTN` -> `Hypertension`). You can customize your own abbreviation list directly in the UI.
-  - **Text Cleaning**: Automatically removes clutter: Emojis, citation numbers like `[1]`, hidden characters that break audio, HTML tags, etc.
-- **🗣️ Advanced Audio Technology**:
-  - **SSML Advanced**: Uses a Male voice for questions and a Female voice for answers, with a professional 1-second pause between fields.
-  - **Simple Mode (Tag-Free)**: Sends plain text to Microsoft servers. Guaranteed 100% stability, never accidentally reads XML source code.
-  - **Speed Control**: Adjust reading speed from 0.5x to 1.5x (default 0.9x for better comprehension of complex content).
-- **🎨 Streamlit UI**: Operates directly in your browser, intuitive, and supports auto-saving all settings for future use.
+**Inspiration:** Inherited and developed from the original concept by [msjsc001/Anki-TTS-Edge](https://github.com/msjsc001/Anki-TTS-Edge), I have completely rebuilt the interface and logic to be more intuitive for modern users and specialized academic communities.
 
 ---
 
-## 🛠️ Installation Guide
+## ✨ Feature Breakdown (Everything You Need)
 
-### 1. System Requirements
+### 1. 🚀 Intelligent Deck Management
 
-- **Python 3.9** or higher installed on your computer.
-- **Anki** must be open while using the application.
+- **🔍 Scan Status**: Do you have thousands of cards and don't know which ones are missing audio? With one click, the App reports:
+  - Total card count.
+  - Cards with existing audio.
+  - "Silent" cards (missing audio).
+- **⚡ Smart Fill**: The App is smart enough to detect cards with existing audio and skip them, focusing only on the gaps. This is extremely useful when adding new cards to a massive deck.
+- **🗑️ Clear Audio**: Want to refresh the voice for your entire deck? The Clear button wipes the audio field, making it ready for a fresh generation batch.
 
-### 2. Install AnkiConnect (Required)
+### 2. 🩺 Medical & Language Specific Optimization
 
-This app communicates with Anki via the **AnkiConnect** plugin.
+- **📝 Abbreviation Expansion**: A "Golden Feature" for students.
+  - Example: Set `PT=Patient`, and the voice will read "Patient" whenever it encounters `PT`.
+  - Supports an unlimited custom abbreviation list directly in the UI.
+- **🧹 Text Cleaning Pro**:
+  - Removes icons, emojis, and miscellaneous symbols.
+  - Deletes citation numbers (e.g., `[1]`, `[2,3]`) that disrupt the flow of speech.
+  - Cleans up stray HTML tags so the engine doesn't read them out loud.
 
-1. Open Anki -> **Tools** -> **Add-ons**.
-2. Click **Get Add-ons**, enter code: `2055492159`.
-3. After installation, select AnkiConnect in the list -> click **Config**.
-4. Paste the following configuration exactly to allow access:
+### 3. 🎙️ High-End Audio Technology (Edge TTS)
 
-   ```json
-   {
-       "apiKey": null,
-       "apiLogPath": null,
-       "ignoreOriginList": [],
-       "webBindAddress": "127.0.0.1",
-       "webBindPort": 8765,
-       "webCorsOriginList": ["*"]
-   }
-   ```
-
-5. **Restart Anki** to apply changes.
-
-### 3. Install the App
-
-1. Download the source code to your computer.
-2. Open Terminal (Command Prompt) in the project folder and run:
-
-   ```bash
-   # Create a virtual environment (Recommended)
-   python -m venv .venv
-
-   # Activate virtual environment
-   # On Windows:
-   .venv\Scripts\activate
-   # On Mac/Linux:
-   source .venv/bin/activate
-
-   # Install required dependencies
-   pip install -r requirements.txt
-   ```
+- **🎭 Advanced SSML**: Configurable multi-voice setup. Have a Male voice read the Question and a Female voice read the Answer (or vice-versa) to create a distinct mental separation. Includes a built-in 1-second pause for better processing time.
+- **🛡️ Simple Mode**: If the engine ever starts reading out the XML source code (e.g., "speak version 1.0"), switch to this mode. It sends pure plain text, guaranteeing 100% stability.
+- **🐢 Speed Control**: Customize from slow (to hear every phoneme) to fast (for quick reviews). **0.9x** is recommended for complex academic content.
 
 ---
 
-## 🚀 How to Use
+## 🛠️ Step-by-Step "Hands-On" Installation
 
-1. **Launch the App:** In your Terminal with the virtual environment active, type:
+### Step 1: Environment Setup (One-Time)
 
-    ```bash
-    streamlit run streamlit_app.py
+1. Download and install **Python** from [python.org](https://www.python.org/downloads/). (Make sure to check **"Add Python to PATH"** during installation).
+2. Download this source code and extract the ZIP file.
+
+### Step 2: Configure Anki & AnkiConnect
+
+The project needs "permission" to talk to your Anki database.
+
+1. Open Anki on your computer.
+2. Go to **Tools** -> **Add-ons** -> **Get Add-ons**.
+3. Enter code: `2055492159` to install **AnkiConnect**.
+4. After installation, select AnkiConnect -> **Config** and paste this block:
+
+    ```json
+    {
+        "apiKey": null,
+        "apiLogPath": null,
+        "ignoreOriginList": [],
+        "webBindAddress": "127.0.0.1",
+        "webBindPort": 8765,
+        "webCorsOriginList": ["*"]
+    }
     ```
 
-2. **Configure UI:**
-    - **Deck/Tag**: Select the group of cards you want to add audio to.
-    - **Fields**: Enter the source field names (e.g., `Front, Back`) and the target field for Audio (e.g., `Audio`). Note: Field names must match Anki fields exactly (case-sensitive).
-    - **Voice**: Select a language and voice.
-3. **Preview:** Always click **Preview Random Note** to check the speed and quality before batch processing.
-4. **Execute:** Click **Start Batch Generation**. The app will display real-time progress and the content currently being processed.
+5. **Critical**: Close and restart Anki.
+
+### Step 3: Install Core Libraries
+
+1. Open the folder containing the downloaded code.
+2. Right-click in the folder and select **Open in Terminal** (or Command Prompt).
+3. Run the command to create a clean environment:
+
+    ```bash
+    python -m venv .venv
+    ```
+
+4. Activate it:
+    - **Windows**: `.venv\Scripts\activate`
+    - **Mac/Linux**: `source .venv/bin/activate`
+5. Install required packages:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 ---
 
-## 🔍 Technical Details & Troubleshooting
+## 🚀 Practical Usage Guide
 
-### SSML vs Simple Mode
-
-- **SSML (Advanced)**: Uses XML tags to control speech characteristics (pauses, multiple voices). Better quality but more complex.
-- **Simple Mode**: Safety mode that sends only plain text. Switch to this if you hear the voice reading "speak version 1.0" or other tags.
-
-### Common Issues
-
-1. **"Could not connect to Anki"**: Check if Anki is open and if AnkiConnect is configured correctly (see Step 2).
-2. **"Field not found"**: Double-check your field names in Anki. `front` is different from `Front`.
-3. **Voice reading XML tags**: Enable **Simple Mode** in the app UI.
+1. **Launch**: In your Terminal, type `streamlit run streamlit_app.py`. A browser window will open automatically.
+2. **Connection**: The App should show a green "Connected to Anki" status on the left sidebar. If it's red, make sure Anki is actually running.
+3. **Filtration**:
+    - Select your **Deck**.
+    - Enter a **Tag** if you only want to process a specific subset of cards.
+4. **Field Configuration**:
+    - **Source Fields**: The names of the fields containing text (e.g., `Front, Back`).
+    - **Target Field**: The name of the field where the audio tag will be stored (e.g., `Audio`).
+5. **Voice Selection**: Choose your target Language and select a voice (e.g., `en-US-GuyNeural` for a standard American accent).
+6. **Execute**: Click **Start Batch Generation** and watch the progress bar.
 
 ---
 
-## 📝 License & Contributions
+## 🔍 Frequently Asked Questions (FAQ) & Troubleshooting
+
+- **Q: Why does the App say it cannot connect to Anki?**
+  - *A*: Ensure Anki is open and AnkiConnect is correctly configured as per Step 2.
+- **Q: The voice is reading weird tags like "speak version 1.0"?**
+  - *A*: This is an occasional SSML parsing error with Microsoft servers. Check the **Simple Mode** box in the App; this will resolve it immediately.
+- **Q: I want to regenerate the audio with a different speed?**
+  - *A*: Change the speed slider, check **"Force overwrite existing audio"**, and run the generation again.
+
+---
+
+## 📝 License & Copyright
 
 This project is released under the **LGPL-3.0** license.
 
-- The Edge-TTS core belongs to the original authors (Christopher Down & Rany).
-- The UI logic, Medical text filtering, and Anki management were developed by **PonZ**.
+- All audio assets generated belong to you.
+- Please retain the **Made by PonZ** credits if you share or fork this project.
 
 **Copyright (c) 2026 PonZ.**
 
 ---
-*Happy studying! May your flashcards always have the right vibe. 🎧📖*
+*I hope this tool makes your learning journey smoother and more enjoyable! Happy studying!* 🎧📚

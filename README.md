@@ -1,128 +1,138 @@
-# 🎧 Anki Connect Edge TTS - Tự động tạo Audio cho Anki
+# 🎧 Anki Connect Edge TTS - Giải Pháp Tự Động Hóa Audio Toàn Diện cho Anki
 
-Ứng dụng mạnh mẽ, đơn giản và tối ưu nhất để tạo âm thanh (Text-to-Speech) cho thẻ bài Anki bằng công nghệ Microsoft Edge TTS. Bản cập nhật đặc biệt dành cho sinh viên Y khoa và người học ngoại ngữ.
+Chào mừng bạn đến với công cụ tối ưu nhất để nâng tầm trải nghiệm học tập trên Anki. Đây không chỉ là một trình tạo âm thanh thông thường, mà là một hệ thống được thiết kế tỉ mỉ để giúp bạn học tập "nhanh hơn, nhớ lâu hơn" thông qua sức mạnh của âm thanh.
 
 > **Made with ❤️ by PonZ**
 >
-> [English Version (README_EN.md)](./README_EN.md)
+> [English Version Available (README_EN.md)](./README_EN.md)
 
 ---
 
-## 🌟 Ý tưởng & Cảm hứng
+## 📖 Mục đích dự án
 
-Dự án này được ra đời từ nhu cầu thực tế trong việc học tập khối lượng kiến thức khổng lồ của ngành Y. Việc nghe âm thanh giúp ghi nhớ tốt hơn, nhưng các công cụ hiện có thường phức tạp hoặc đọc không tự nhiên.
+Việc học thẻ bài (flashcards) chỉ với văn bản thường gây nhàm chán và khó ghi nhớ phát âm, đặc biệt là với các thuật ngữ Y khoa phức tạp hoặc ngôn ngữ mới. Dự án này được tạo ra để:
 
-**Cảm hứng:** Dự án được lấy cảm hứng và kế thừa ý tưởng từ [msjsc001/Anki-TTS-Edge](https://github.com/msjsc001/Anki-TTS-Edge). Tôi đã phát triển lại với giao diện Streamlit hiện đại, thêm các bộ lọc thông minh dành riêng cho thuật ngữ Y khoa và khả năng quản lý Deck trực quan hơn.
+1. **Tiết kiệm thời gian**: Thay vì ngồi tạo từng file audio thủ công, bạn có thể tạo hàng nghìn file chỉ trong vài phút.
+2. **Tăng cường trí nhớ**: Sự kết hợp giữa mắt nhìn và tai nghe kích thích não bộ ghi nhớ sâu hơn.
+3. **Tối ưu hóa quy trình**: Quản lý Deck chuyên nghiệp, bù đắp audio thiếu hụt mà không làm xáo trộn dữ liệu cũ.
 
----
-
-## ✨ Tính năng nổi bật
-
-- **🚀 Quét & Quản lý Thông minh**:
-  - **Scan Status**: Biết ngay Deck/Tag nào còn thiếu audio. Trả về báo cáo tổng số thẻ, thẻ đã có và thẻ chưa có audio.
-  - **Smart Fill**: Chỉ tạo audio cho những thẻ còn trống (tiết kiệm thời gian, tránh trùng lặp).
-  - **Clear Audio**: Xóa sạch audio cũ trong trường dữ liệu để làm lại từ đầu.
-- **🩺 Tối ưu ngành Y & Ngôn ngữ**:
-  - **Abbreviation Expansion**: Tự động giải mã từ viết tắt (VD: `BN` -> `Bệnh nhân`, `THA` -> `Tăng huyết áp`). Bạn có thể tùy chỉnh danh sách từ viết tắt ngay trên giao diện.
-  - **Text Cleaning**: Tự động loại bỏ rác văn bản: Emojis, số tham khảo `[1]`, các ký tự ẩn phá vỡ âm thanh, mã HTML, v.v.
-- **🗣️ Công nghệ âm thanh cao cấp**:
-  - **SSML Advanced**: Dùng giọng Nam đọc câu hỏi, giọng Nữ trả lời, ngắt nghỉ 1 giây chuyên nghiệp giữa các trường.
-  - **Simple Mode (Chống lỗi đọc mã)**: Chế độ gửi văn bản thuần túy cho máy chủ Microsoft. Đảm bảo cực kỳ ổn định, không bao giờ xảy ra lỗi đọc nhầm mã nguồn XML.
-  - **Speed Control**: Chỉnh tốc độ từ 0.5x đến 1.5x (mặc định 0.9x cho dễ nghe nội dung chuyên môn).
-- **🎨 Giao diện Streamlit**: Hoạt động trực tiếp trên trình duyệt, trực quan, hỗ trợ tự động lưu mọi cài đặt cho lần sử dụng sau.
+**Cảm hứng:** Được kế thừa và phát triển từ ý tưởng gốc của [msjsc001/Anki-TTS-Edge](https://github.com/msjsc001/Anki-TTS-Edge), tôi đã tái cấu trúc hoàn toàn giao diện và logic để phù hợp hơn với người dùng Việt Nam, đặc biệt là cộng đồng sinh viên Y khoa.
 
 ---
 
-## 🛠️ Hướng dẫn cài đặt chi tiết
+## ✨ Tính năng chi tiết (Mọi thứ bạn cần)
 
-### 1. Yêu cầu hệ thống
+### 1. 🚀 Quản lý Deck Thông minh
 
-- Máy tính đã cài đặt **Python 3.9** trở lên.
-- Phần mềm **Anki** phải đang mở khi sử dụng ứng dụng.
+- **🔍 Scan Status (Quét tình trạng)**: Bạn có hàng nghìn thẻ bài và không biết thẻ nào có tiếng, thẻ nào chưa? Chỉ cần 1 click, App sẽ báo cáo:
+  - Tổng số thẻ hiện có.
+  - Số thẻ đã có sẵn âm thanh.
+  - Số thẻ đang bị "câm" (thiếu audio).
+- **⚡ Smart Fill (Chạy bù)**: App đủ thông minh để nhận diện những thẻ đã có tiếng và bỏ qua chúng, chỉ tập trung xử lý những thẻ còn thiếu. Điều này cực kỳ hữu ích khi bạn thêm thẻ mới vào một bộ Deck lớn.
+- **🗑️ Clear Audio (Làm sạch)**: Muốn thay đổi giọng đọc cho toàn bộ Deck? Nút xóa sẽ giúp bạn làm sạch trường Audio để sẵn sàng cho một đợt tạo mới.
 
-### 2. Cài đặt AnkiConnect (Bắt buộc)
+### 2. 🩺 Tối ưu hóa cho Chuyên ngành & Ngôn ngữ
 
-App này giao tiếp với Anki qua plugin **AnkiConnect**.
+- **📝 Abbreviation Expansion (Giải mã từ viết tắt)**: Tính năng "vàng" cho sinh viên Y khoa.
+  - Ví dụ: Bạn nhập `BN=Bệnh nhân`, khi máy gặp chữ `BN` nó sẽ đọc đầy đủ là "Bệnh nhân".
+  - Hỗ trợ danh sách tùy chỉnh không giới hạn ngay trên giao diện.
+- **🧹 Text Cleaning Pro (Dọn dẹp văn bản)**:
+  - Loại bỏ icon, emoji, các ký tự lạ.
+  - Xóa bỏ các số tham khảo nhỏ trong bài viết (VD: `[1]`, `[2,3]`).
+  - Loại bỏ mã HTML thừa để máy không đọc nhầm.
 
-1. Mở Anki -> **Tools** -> **Add-ons**.
-2. Chọn **Get Add-ons**, nhập mã: `2055492159`.
-3. Sau khi cài xong, chọn AnkiConnect trong danh sách -> chọn **Config**.
-4. Dán chính xác đoạn cấu hình sau vào ô bên phải để cho phép App truy cập:
+### 3. 🎙️ Công nghệ Audio Đỉnh cao (Edge TTS)
 
-   ```json
-   {
-       "apiKey": null,
-       "apiLogPath": null,
-       "ignoreOriginList": [],
-       "webBindAddress": "127.0.0.1",
-       "webBindPort": 8765,
-       "webCorsOriginList": ["*"]
-   }
-   ```
-
-5. **Khởi động lại Anki** để lưu thay đổi.
-
-### 3. Cài đặt App trên máy tính
-
-1. Tải toàn bộ mã nguồn về máy tính.
-2. Mở Terminal (Command Prompt) tại thư mục dự án và chạy các lệnh:
-
-   ```bash
-   # Tạo môi trường ảo (Khuyên dùng để tránh xung đột thư viện)
-   python -m venv .venv
-
-   # Kích hoạt môi trường ảo
-   # Trên Windows:
-   .venv\Scripts\activate
-   # Trên Mac/Linux:
-   source .venv/bin/activate
-
-   # Cài đặt các thư viện cần thiết
-   pip install -r requirements.txt
-   ```
+- **🎭 SSML Advanced (Đa giọng đọc)**: Cho phép cấu hình giọng Nam đọc Câu hỏi và giọng Nữ đọc Câu trả lời (hoặc ngược lại) để tạo sự phân biệt rõ ràng khi học. Có thêm đoạn nghỉ 1 giây để não bộ kịp xử lý.
+- **🛡️ Simple Mode (Chế độ an toàn)**: Nếu bạn gặp tình trạng máy đọc luôn cả mã lệnh (XML), hãy bật chế độ này. App sẽ gửi văn bản thuần túy, đảm bảo 100% không lỗi.
+- **🐢 Speed Control (Tốc độ)**: Tùy chỉnh từ đọc chậm (để nghe rõ phát âm) đến đọc nhanh (để ôn tập). Khuyên dùng **0.9x** cho kiến thức chuyên môn.
 
 ---
 
-## 🚀 Cách sử dụng
+## 🛠️ Hướng dẫn cài đặt "Cầm tay chỉ việc"
 
-1. **Chạy App:** Trong cửa sổ Terminal đang kích hoạt môi trường ảo, gõ:
+### Bước 1: Chuẩn bị môi trường (Làm 1 lần duy nhất)
 
-    ```bash
-    streamlit run streamlit_app.py
+1. Tải và cài đặt **Python** từ [python.org](https://www.python.org/downloads/). (Lưu ý tích chọn **"Add Python to PATH"** khi cài đặt).
+2. Tải mã nguồn này về máy và giải nén.
+
+### Bước 2: Thiết lập Anki & AnkiConnect
+
+Dự án cần "quyền" để nói chuyện với Anki của bạn.
+
+1. Mở phần mềm Anki trên máy tính.
+2. Vào **Tools** -> **Add-ons** -> **Get Add-ons**.
+3. Nhập mã: `2055492159` để cài **AnkiConnect**.
+4. Sau khi cài, chọn AnkiConnect -> **Config** và dán đoạn này vào:
+
+    ```json
+    {
+        "apiKey": null,
+        "apiLogPath": null,
+        "ignoreOriginList": [],
+        "webBindAddress": "127.0.0.1",
+        "webBindPort": 8765,
+        "webCorsOriginList": ["*"]
+    }
     ```
 
-2. **Cấu hình trên giao diện:**
-    - **Deck/Tag**: Chọn nhóm thẻ bài bạn muốn thêm audio.
-    - **Fields**: Nhập tên trường chứa văn bản (VD: `Front, Back`) và tên trường lưu Audio (VD: `Audio`). Lưu ý: Tên trường phải trùng khớp chính xác 100% với tên trường trong Anki của bạn.
-    - **Voice**: Chọn ngôn ngữ và giọng đọc phù hợp.
-3. **Xem trước (Preview):** Luôn bấm **Preview Random Note** để nghe thử tốc độ và chất lượng trước khi chạy hàng loạt.
-4. **Thực thi:** Bấm **Start Batch Generation**. App sẽ hiển thị tiến độ và nội dung đang xử lý trực tiếp trên màn hình.
+5. **Quan trọng**: Tắt Anki và mở lại.
+
+### Bước 3: Cài đặt thư viện hỗ trợ
+
+1. Mở thư mục code vừa tải về.
+2. Nhấp chuột phải vào vùng trống, chọn **Open in Terminal** (hoặc Command Prompt).
+3. Chạy lệnh để tạo môi trường sạch:
+
+    ```bash
+    python -m venv .venv
+    ```
+
+4. Kích hoạt nó:
+    - **Windows**: `.venv\Scripts\activate`
+    - **Mac/Linux**: `source .venv/bin/activate`
+5. Cài đặt các gói cần thiết:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 ---
 
-## 🔍 Giải thích kỹ thuật & Khắc phục lỗi
+## 🚀 Hướng dẫn sử dụng thực tế
 
-### SSML vs Simple Mode
-
-- **SSML (Advanced)**: Sử dụng mã XML để điều khiển giọng đọc (ngắt nghỉ, đa giọng). Phức tạp nhưng giọng đọc sẽ chuyên nghiệp hơn.
-- **Simple Mode**: Chế độ an toàn, chỉ gửi chữ thuần. Hãy bật chế độ này nếu bạn thấy máy bắt đầu đọc mớ mã lệnh như `speak version 1.0`.
-
-### Các lỗi thường gặp
-
-1. **"Could not connect to Anki"**: Hãy kiểm tra xem Anki đã mở chưa và bạn đã cài đúng cấu hình AnkiConnect trong bước 2 chưa.
-2. **"Field not found"**: Kiểm tra lại tên trường trong Anki (Phân biệt chữ hoa/chữ thường). Ví dụ `front` khác với `Front`.
-3. **Lỗi máy đọc mã lệnh**: Bật **Simple Mode** trên giao diện App.
+1. **Khởi động**: Tại Terminal, gõ `streamlit run streamlit_app.py`. Một trang web sẽ hiện ra.
+2. **Kết nối**: App sẽ hiện "Connected to Anki" màu xanh ở bên trái. Nếu hiện màu đỏ, hãy kiểm tra xem Anki của bạn đã mở chưa.
+3. **Lọc dữ liệu**:
+    - Chọn **Deck** (Bộ thẻ).
+    - Nhập **Tag** (Nhãn) nếu bạn chỉ muốn tạo tiếng cho một phần của Deck.
+4. **Cấu hình Trường (Fields)**:
+    - **Source Fields**: Tên các ô chứa chữ (VD: `Front, Back`). Chữ trong các ô này sẽ được đọc lên.
+    - **Target Field**: Tên ô sẽ chứa file âm thanh (VD: `Audio`).
+5. **Chọn Giọng**: Chọn Ngôn ngữ là `vi-VN` và chọn giọng `NamMinh` (Trầm ấm) hoặc `HoaiMy` (Nhẹ nhàng).
+6. **Thực hiện**: Bấm **Start Batch Generation** và theo dõi thanh tiến trình.
 
 ---
 
-## 📝 Bản quyền & Đóng góp
+## 🔍 Giải đáp thắc mắc (FAQ) & Sửa lỗi
 
-Dự án được phát hành dưới giấy phép **LGPL-3.0**.
+- **Hỏi: Tại sao App báo không kết nối được với Anki?**
+  - *Đáp*: Hãy chắc chắn Anki đang mở và bạn đã làm đúng Bước 2 phần Cấu hình AnkiConnect.
+- **Hỏi: Máy đọc luôn cả mấy chữ "speak version 1.0", xử lý sao?**
+  - *Đáp*: Đây là lỗi nhận diện SSML của Microsoft. Hãy tích chọn **Simple Mode** trên App, lỗi này sẽ biến mất hoàn toàn.
+- **Hỏi: Tôi muốn sửa lại file Audio vì tốc độ hơi nhanh?**
+  - *Đáp*: Chỉnh lại tốc độ, tích chọn **"Force overwrite existing audio"** và chạy lại. App sẽ ghi đè file mới lên.
 
-- Phần lõi Edge-TTS thuộc về các tác giả gốc (Christopher Down & Rany).
-- Toàn bộ logic giao diện, lọc văn bản Y khoa và quản lý Anki được phát triển bởi **PonZ**.
+---
+
+## 📝 Giấy phép & Bản quyền
+
+Dự án sử dụng giấy phép **LGPL-3.0**.
+
+- Mọi thành quả của bạn tạo ra (audio) là của bạn.
+- Vui lòng giữ lại ghi chú **Made by PonZ** nếu bạn chia sẻ hoặc phát triển lại công cụ này.
 
 **Copyright (c) 2026 PonZ.**
 
 ---
-*Mọi ý kiến đóng góp hoặc báo lỗi vui lòng liên hệ qua hệ thống GitHub Issue của dự án. Chúc bạn học tập hiệu quả!* 🎧📖
+*Hy vọng công cụ này sẽ giúp hành trình chinh phục kiến thức của bạn trở nên thú vị và nhẹ nhàng hơn!* 🎧📚
