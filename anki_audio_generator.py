@@ -133,6 +133,45 @@ class AnkiGenerator:
         await communicate.save(output_file)
         return output_file
 
+    def scan_notes(self, tag=None, deck=None, audio_field="TTS"):
+        # Build query
+        query_parts = []
+        if deck:
+            query_parts.append(f'deck:"{deck}"')
+        if tag:
+            query_parts.append(f'tag:{tag}')
+        
+        full_query = " ".join(query_parts) if query_parts else ""
+        if not full_query:
+            return {"total": 0, "with_audio": 0, "without_audio": 0, "note_ids": []}
+
+        note_ids = self.invoke("findNotes", query=full_query)
+        if not note_ids:
+            return {"total": 0, "with_audio": 0, "without_audio": 0, "note_ids": []}
+
+        notes_info = self.invoke("notesInfo", notes=note_ids)
+        total = len(notes_info)
+        with_audio = 0
+        
+        for note in notes_info:
+            fields = note['fields']
+            if audio_field in fields and fields[audio_field]['value'].strip():
+                with_audio += 1
+        
+        return {
+            "total": total,
+            "with_audio": with_audio,
+            "without_audio": total - with_audio,
+            "note_ids": note_ids
+        }
+
+    def clear_audio_field(self, note_ids, audio_field):
+        if not note_ids:
+            return
+        
+        for note_id in note_ids:
+            self.invoke("updateNoteFields", note={"id": note_id, "fields": {audio_field: ""}})
+
     async def process_notes(self, tag, source_fields, audio_field, voice_1, voice_2=None, rate="+0%", overwrite=False, deck=None, abbreviations=None, log_callback=print, progress_callback=None, preview_only=False, simple_mode=False):
         try:
             if isinstance(source_fields, str):
@@ -265,6 +304,58 @@ class AnkiGenerator:
         except Exception as e:
             if log_callback: log_callback(f"An error occurred: {e}")
             if log_callback: log_callback("Ensure Anki is running and AnkiConnect is installed.")
+
+    def get_notes_status(self, deck, tag, audio_field):
+        """Returns (total, count_with_audio, count_without_audio)"""
+        query_parts = []
+        if deck:
+            query_parts.append(f'deck:"{deck}"')
+        if tag:
+            query_parts.append(f'tag:{tag}')
+        
+        full_query = " ".join(query_parts) if query_parts else ""
+        if not full_query:
+            return 0, 0, 0
+            
+        note_ids = self.invoke("findNotes", query=full_query)
+        if not note_ids:
+            return 0, 0, 0
+            
+        notes_info = self.invoke("notesInfo", notes=note_ids)
+        total = len(notes_info)
+        count_with_audio = 0
+        
+        for note in notes_info:
+            fields = note['fields']
+            if audio_field in fields and fields[audio_field]['value'].strip():
+                count_with_audio += 1
+                
+        return total, count_with_audio, total - count_with_audio
+
+    def clear_audio(self, deck, tag, audio_field, log_callback=None):
+        """Clears the audio field for all matching notes"""
+        query_parts = []
+        if deck:
+            query_parts.append(f'deck:"{deck}"')
+        if tag:
+            query_parts.append(f'tag:{tag}')
+        
+        full_query = " ".join(query_parts) if query_parts else ""
+        if not full_query:
+            if log_callback: log_callback("Please specify Deck or Tag.")
+            return
+            
+        note_ids = self.invoke("findNotes", query=full_query)
+        if not note_ids:
+            if log_callback: log_callback("No notes found to clear.")
+            return
+
+        if log_callback: log_callback(f"Clearing audio field '{audio_field}' for {len(note_ids)} notes...")
+        
+        for note_id in note_ids:
+            self.invoke("updateNoteFields", note={"id": note_id, "fields": {audio_field: ""}})
+            
+        if log_callback: log_callback("Clear complete.")
 
 # Wrapper for CLI usage
 async def main():

@@ -164,18 +164,61 @@ if connected:
     col_act1, col_act2 = st.columns([1, 1])
     
     with col_act1:
-        force_overwrite = st.checkbox("Force overwrite existing audio", value=defaults.get("overwrite", False), help="If checked, audio will be regenerated even if the target field is not empty.")
-        start_btn = st.button("Start Batch Generation", type="primary", disabled=not connected, use_container_width=True)
-        # The start_btn is replaced by the new "Start Generation" button below
-        # start_btn = st.button("Start Batch Generation", type="primary", disabled=not connected, use_container_width=True)
+        force_overwrite = st.checkbox("Force overwrite existing audio", value=defaults.get("overwrite", False), help="Nếu tích chọn, App sẽ ghi đè audio mới cho tất cả các thẻ. Nếu bỏ chọn (mặc định), App sẽ chỉ chạy những thẻ còn trống audio.")
+        start_btn = st.button("🚀 Start Batch Generation", type="primary", disabled=not connected, use_container_width=True)
         
     with col_act2:
         st.write("") # Spacer
         st.write("") # Spacer
         preview_btn = st.button("🎲 Preview Random Note", disabled=not connected, use_container_width=True)
 
+    # Audio Management Section
+    with st.expander("🛠️ Audio Management (Quản lý Audio)", expanded=False):
+        st.info("Sử dụng phần này để kiểm tra tình trạng audio hoặc dọn dẹp Deck của bạn.")
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("🔍 Scan Status", use_container_width=True):
+                with st.spinner("Scanning notes..."):
+                    try:
+                        gen = AnkiGenerator(anki_url)
+                        total, with_audio, without_audio = gen.get_notes_status(actual_deck, note_tag, audio_field)
+                        st.session_state.notes_status = (total, with_audio, without_audio)
+                    except Exception as e:
+                        st.error(f"Lỗi khi quét: {e}")
+            
+            if "notes_status" in st.session_state:
+                total, with_audio, without_audio = st.session_state.notes_status
+                st.write(f"📊 **Tổng số thẻ**: {total}")
+                st.write(f"✅ **Đã có audio**: {with_audio}")
+                st.write(f"❌ **Chưa có audio**: {without_audio}")
+
+        with c2:
+            if st.button("🗑️ Clear All Audio", use_container_width=True, type="secondary", help="Xóa sạch nội dung trong trường Audio của các thẻ đang lọc."):
+                st.session_state.confirm_clear_audio = True
+                
+            if st.session_state.get('confirm_clear_audio'):
+                st.warning("Bạn có chắc chắn muốn xóa sạch audio của các thẻ này?")
+                col_confirm1, col_confirm2 = st.columns(2)
+                with col_confirm1:
+                    if st.button("✅ Xác nhận xóa", type="primary", use_container_width=True):
+                        with st.spinner("Clearing audio..."):
+                            try:
+                                gen = AnkiGenerator(anki_url)
+                                gen.clear_audio(actual_deck, note_tag, audio_field, log_callback=st.toast)
+                                st.success("Đã xóa sạch audio!")
+                                if "notes_status" in st.session_state:
+                                    del st.session_state.notes_status
+                                del st.session_state.confirm_clear_audio
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Lỗi khi xóa: {e}")
+                with col_confirm2:
+                    if st.button("❌ Hủy", use_container_width=True):
+                        del st.session_state.confirm_clear_audio
+                        st.rerun()
+
     # Simple Mode Checkbox
-    simple_mode = st.checkbox("⚠️ Chế độ đơn giản (Simple Mode)", help="Chọn cái này nếu bị lỗi máy đọc mã lệnh (SSML). Chế độ này sẽ tắt giọng địa phương và ngắt nghỉ nâng cao, chỉ đọc văn bản thuần.")
+    simple_mode = st.checkbox("⚠️ Chế độ đơn giản (Simple Mode)", value=defaults.get("simple_mode", False), help="Chọn cái này nếu bị lỗi máy đọc mã lệnh (SSML). Chệ độ này sẽ tắt giọng địa phương và ngắt nghỉ nâng cao, chỉ đọc văn bản thuần.")
 
     if preview_btn:
         with st.spinner("Generating preview..."):
@@ -219,8 +262,8 @@ if connected:
              except Exception as e:
                 st.error(f"Error: {e}")
 
-    # Generate Button
-    if st.button("🚀 Start Generation", type="primary", disabled=not connected, use_container_width=True):
+    # Generate Logic
+    if start_btn:
         if not source_fields:
             st.error("Please enter at least one source field.")
         else:
@@ -235,20 +278,18 @@ if connected:
                 "voice": voice_1,
                 "speed": speed,
                 "abbreviations": abbr_text,
-                "overwrite": force_overwrite
+                "overwrite": force_overwrite,
+                "simple_mode": simple_mode
             }
             save_settings(new_settings)
 
             log_container = st.empty()
             progress_bar = st.progress(0, text="Starting...")
             
-            def update_log(msg):
-                log_container.code("\n".join(logs[-10:]), language="text") # Re-using the original log display logic
-            
-            logs = [] # Initialize logs for the new logging mechanism
-            def log_callback(message): # Re-using the original log_callback
+            logs = []
+            def log_callback(message):
                 logs.append(message)
-                update_log(message)
+                log_container.code("\n".join(logs[-10:]), language="text")
 
             try:
                 gen = AnkiGenerator(anki_url)
@@ -274,7 +315,8 @@ if connected:
                 loop.run_until_complete(run_gen())
                 
                 st.success("Generation Complete!")
-                progress_bar.progress(1.0, text="Done!") # Ensure progress bar completes
+                progress_bar.progress(1.0, text="Done!")
+                st.balloons()
                 
             except Exception as e:
                 st.error(f"Error during execution: {e}")
