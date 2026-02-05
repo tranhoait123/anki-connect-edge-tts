@@ -1,130 +1,111 @@
-# edge-tts
+# 🎧 Anki Connect Edge TTS - Tự động tạo Audio cho Anki
 
-`edge-tts` is a Python module that allows you to use Microsoft Edge's online text-to-speech service from within your Python code or using the provided `edge-tts` or `edge-playback` command.
+Ứng dụng mạnh mẽ, đơn giản và tối ưu nhất để tạo âm thanh (Text-to-Speech) cho thẻ bài Anki bằng công nghệ Microsoft Edge TTS. Bản cập nhật đặc biệt dành cho sinh viên Y khoa và người học ngoại ngữ.
 
-## Installation
+> **Made with ❤️ by PonZ**
 
-To install it, run the following command:
+---
 
-    $ pip install edge-tts
+## 🌟 Ý tưởng & Cảm hứng
 
-If you only want to use the `edge-tts` and `edge-playback` commands, it would be better to use `pipx`:
+Dự án này được ra đời từ nhu cầu thực tế trong việc học tập khối lượng kiến thức khổng lồ của ngành Y. Việc nghe âm thanh giúp ghi nhớ tốt hơn, nhưng các công cụ hiện có thường phức tạp hoặc đọc không tự nhiên.
 
-    $ pipx install edge-tts
+**Cảm hứng:** Dự án được lấy cảm hứng và kế thừa ý tưởng từ [msjsc001/Anki-TTS-Edge](https://github.com/msjsc001/Anki-TTS-Edge). Tôi đã phát triển lại với giao diện Streamlit hiện đại, thêm các bộ lọc thông minh dành riêng cho thuật ngữ Y khoa và khả năng quản lý Deck trực quan hơn.
 
-## Usage
+---
 
-### Basic usage
+## ✨ Tính năng nổi bật
 
-If you want to use the `edge-tts` command, you can simply run it with the following command:
+- **🚀 Quét & Quản lý Thông minh**:
+  - **Scan Status**: Biết ngay Deck/Tag nào còn thiếu audio.
+  - **Smart Fill**: Chỉ tạo audio cho những thẻ còn trống (tiết kiệm thời gian).
+  - **Clear Audio**: Xóa sạch audio cũ trong một nốt nhạc để làm lại từ đầu.
+- **🩺 Tối ưu ngành Y**:
+  - Tự động giải mã từ viết tắt (VD: `BN` -> `Bệnh nhân`, `THA` -> `Tăng huyết áp`).
+  - Lọc sạch rác văn bản: Emojis, số tham khảo `[1]`, các ký tự ẩn phá vỡ âm thanh.
+- **🗣️ Công nghệ âm thanh cao cấp**:
+  - **SSML Advanced**: Dùng giọng Nam đọc câu hỏi, giọng Nữ trả lời, ngắt nghỉ 1 giây chuyên nghiệp.
+  - **Simple Mode**: Chế độ "chống điếc" - cực kỳ ổn định, không bao giờ đọc nhầm mã nguồn.
+  - **Speed Control**: Chỉnh tốc độ từ 0.5x đến 1.5x (mặc định 0.9x cho dễ nghe).
+- **🎨 Giao diện Streamlit**: Sử dụng trực tiếp trên trình duyệt, trực quan và dễ dùng.
 
-    $ edge-tts --text "Hello, world!" --write-media hello.mp3 --write-subtitles hello.srt
+---
 
-If you wish to play it back immediately with subtitles, you could use the `edge-playback` command:
+## 🛠️ Hướng dẫn cài đặt chi tiết
 
-    $ edge-playback --text "Hello, world!"
+### 1. Yêu cầu hệ thống
 
-Note that `edge-playback` requires the installation of the [`mpv` command line player](https://mpv.io/), except on Windows.
+- Đã cài đặt **Python 3.9+**
+- Phần mềm **Anki** đang mở trên máy tính.
 
-All `edge-tts` commands work with `edge-playback` with the exception of the `--write-media`, `--write-subtitles` and `--list-voices` options.
+### 2. Cài đặt AnkiConnect (Bắt buộc)
 
-### Changing the voice
+App này giao tiếp với Anki qua plugin **AnkiConnect**.
 
-You can change the voice used by the text-to-speech service by using the `--voice` option. The `--list-voices` option can be used to list all available voices.
+1. Mở Anki -> **Tools** -> **Add-ons**.
+2. Chọn **Get Add-ons**, nhập mã: `2055492159`.
+3. Sau khi cài xong, chọn AnkiConnect -> **Config** và dán đoạn này vào:
 
-    $ edge-tts --list-voices
-    Name                               Gender    ContentCategories      VoicePersonalities
-    ---------------------------------  --------  ---------------------  --------------------------------------
-    af-ZA-AdriNeural                   Female    General                Friendly, Positive
-    af-ZA-WillemNeural                 Male      General                Friendly, Positive
-    am-ET-AmehaNeural                  Male      General                Friendly, Positive
-    am-ET-MekdesNeural                 Female    General                Friendly, Positive
-    ar-AE-FatimaNeural                 Female    General                Friendly, Positive
-    ar-AE-HamdanNeural                 Male      General                Friendly, Positive
-    ar-BH-AliNeural                    Male      General                Friendly, Positive
-    ar-BH-LailaNeural                  Female    General                Friendly, Positive
-    ar-DZ-AminaNeural                  Female    General                Friendly, Positive
-    ar-DZ-IsmaelNeural                 Male      General                Friendly, Positive
-    ar-EG-SalmaNeural                  Female    General                Friendly, Positive
-    ...
+   ```json
+   {
+       "apiKey": null,
+       "apiLogPath": null,
+       "ignoreOriginList": [],
+       "webBindAddress": "127.0.0.1",
+       "webBindPort": 8765,
+       "webCorsOriginList": ["*"]
+   }
+   ```
 
-    $ edge-tts --voice ar-EG-SalmaNeural --text "مرحبا كيف حالك؟" --write-media hello_in_arabic.mp3 --write-subtitles hello_in_arabic.srt
+4. **Khởi động lại Anki**.
 
-### Custom SSML
+### 3. Cài đặt App
 
-Support for custom SSML was removed because Microsoft prevents the use of any SSML that could not be generated by Microsoft Edge itself. This means that all the cases where custom SSML would be useful cannot be supported as the service only permits a single `<voice>` tag with a single `<prosody>` tag inside it. Any available customization options that could be used in the `<prosody>` tag are already available from the library or the command line itself.
+1. Tải source code về máy.
+2. Mở Terminal (Command Prompt) tại thư mục dự án và chạy các lệnh sau:
 
-### Changing rate, volume and pitch
+   ```bash
+   # Tạo môi trường ảo (khuyên dùng)
+   python -m venv .venv
 
-You can change the rate, volume and pitch of the generated speech by using the `--rate`, `--volume` and `--pitch` options. When using a negative value, you will need to use `--[option]=-50%` instead of `--[option] -50%` to avoid the option being interpreted as a command line option.
+   # Kích hoạt môi trường ảo
+   # Trên Mac/Linux:
+   source .venv/bin/activate
+   # Trên Windows:
+   .venv\Scripts\activate
 
-    $ edge-tts --rate=-50% --text "Hello, world!" --write-media hello_with_rate_lowered.mp3 --write-subtitles hello_with_rate_lowered.srt
-    $ edge-tts --volume=-50% --text "Hello, world!" --write-media hello_with_volume_lowered.mp3 --write-subtitles hello_with_volume_lowered.srt
-    $ edge-tts --pitch=-50Hz --text "Hello, world!" --write-media hello_with_pitch_lowered.mp3 --write-subtitles hello_with_pitch_lowered.srt
+   # Cài đặt các thư viện cần thiết
+   pip install -r requirements.txt
+   ```
 
-## Python module
+---
 
-It is possible to use the `edge-tts` module directly from Python. Examples from the project itself include:
+## 🚀 Cách sử dụng
 
-* [/examples/](/examples/)
-* [/src/edge_tts/util.py](/src/edge_tts/util.py)
+1. **Chạy App:**
 
-Other projects that use the `edge-tts` module include:
-
-* [hass-edge-tts](https://github.com/hasscc/hass-edge-tts/blob/main/custom_components/edge_tts/tts.py)
-* [Podcastfy](https://github.com/souzatharsis/podcastfy/blob/main/podcastfy/tts/providers/edge.py)
-* [tts-samples](https://github.com/yaph/tts-samples/blob/main/bin/create_sound_samples.py) - a collection of [mp3 sound samples](https://github.com/yaph/tts-samples/tree/main/mp3) to facilitate picking a voice for your project.
-
-## Anki Connect TTS Generator (New Feature 🚀)
-
-This project now includes a **Streamlit App** to batch generate audio for your Anki cards using `edge-tts` and `AnkiConnect`.
-
-### ✨ Key Features
-*   **Batch Processing**: Generate audio for hundreds of cards at once by Tag.
-*   **Medical Optimization**:
-    *   **SSML Support**: Adds smart pauses (1.5s) between fields (Question/Answer).
-    *   **Text Cleaning**: Automatically removes Emojis, citations `[1]`, and medical formatting.
-*   **Advanced Audio Control**:
-    *   **Single Voice Mode**: One voice reads everything (Question & Answer) for consistency.
-    *   **Speed Control**: Adjust reading speed from `-50%` to `+50%`.
-    *   **Language Filter**: Easily filter voices by language (e.g., `vi-VN`, `en-US`).
-*   **Preview**: Listen to a sample note before generating for the whole deck.
-
-### 🛠️ Setup
-
-1.  **Install Requirements**:
-    ```bash
-    pip install streamlit edge-tts
-    ```
-2.  **Anki Configuration**:
-    *   Install the [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add-on.
-    *   Update AnkiConnect Config (Tools -> Add-ons -> AnkiConnect -> Config) to allow local connections:
-        ```json
-        {
-            "apiKey": null,
-            "apiLogPath": null,
-            "ignoreOriginList": [],
-            "webBindAddress": "127.0.0.1",
-            "webBindPort": 8765,
-            "webCorsOriginList": ["*"]
-        }
-        ```
-    *   **Restart Anki**.
-
-### 🚀 How to Run
-
-1.  Open your terminal in the project folder.
-2.  Run the app:
     ```bash
     streamlit run streamlit_app.py
     ```
-3.  The app will open in your browser.
-4.  **Settings**:
-    *   **Note Tag**: Enter the tag of the cards you want to add audio to (e.g., `vocab_korean`).
-    *   **Source Fields**: Comma-separated fields to read (e.g., `Front, Back`).
-    *   **Target Field**: Field to save the audio file (e.g., `TTS`).
-    *   **Voice**: Select Language -> Voice.
-    *   **Speed**: Adjust as needed.
-5.  Click **Start Batch Generation**.
+
+2. **Cấu hình trên giao diện:**
+    - Chọn **Deck** và **Tag** của thẻ bài cần tạo tiếng.
+    - Nhập tên trường chứa văn bản (VD: `Front, Back`) và trường sẽ lưu Audio (VD: `Audio`).
+    - Chọn giọng đọc (Khuyên dùng `NamMinh` hoặc `HoaiMy` cho tiếng Việt).
+3. **Kiểm tra:** Bấm **Preview Random Note** để nghe thử một thẻ bất kỳ.
+4. **Thực thi:** Bấm **Start Batch Generation** và ngồi uống cafe chờ máy làm việc!
 
 ---
+
+## 📝 Bản quyền (Copyright)
+
+Dự án được phát hành dưới giấy phép **LGPL-3.0**.
+
+- Phần lõi Edge-TTS thuộc về các tác giả gốc.
+- Phần giao diện và logic quản lý Anki được phát triển bởi **PonZ**.
+
+**Copyright (c) 2026 PonZ.**
+Tất cả các đóng góp hoặc sao chép vui lòng giữ lại nguồn và tên tác giả.
+
+---
+*Chúc anh/chị học tập thật tốt với những chiếc thẻ bài "vibe" nhất!* 🎧📖
